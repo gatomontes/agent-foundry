@@ -71,6 +71,58 @@ Intent Intake
               -> Blackquill Review Gate
                 -> Final Disposition
 ```
+## Reinforced Constraints
+
+### Operational-First Doctrine
+
+The Foundry must remain operationally tangible.
+
+Doctrine without executable mission structure becomes abstraction.
+
+### Mission Blueprints
+
+Concrete mission blueprints are required.
+
+Recommended categories:
+- SaaS
+- Security
+- Compliance
+- Research
+- Creative
+- Product
+- Payroll
+
+Each blueprint should define:
+- objective
+- staffing
+- operational flow
+- governance attachment
+- review gates
+- disposition criteria
+
+### Specialist Taxonomy Discipline
+
+Specialists should follow:
+
+```txt
+core archetype
+-> specialization
+-> runtime implementation
+````
+
+Avoid uncontrolled profession proliferation.
+
+### Mythologization Control
+
+The gothic institutional identity reinforces the ecosystem.
+
+It must never replace operational rigor.
+
+Guiding principle:
+
+```txt
+cathedral, not cosplay
+```
 
 ## Repository Direction
 
