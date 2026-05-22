@@ -19,6 +19,7 @@ It receives raw intent and converts it into:
 Agent Foundry assembles cognition.
 Agent Framework governs cognition.
 Blackquill audits cognition.
+Carmilla preserves cognition.
 ```
 
 Agent Foundry is not the governance substrate.
@@ -27,16 +28,50 @@ That is Agent Framework.
 Agent Foundry is not the critic or judge.
 That is Blackquill.
 
-Agent Foundry is the front gate where a human says:
+Agent Foundry is not the archive.
+That is Carmilla.
 
-> I want to do X.
+## Foundry Boundary: Isolde
 
-And the system answers:
+Isolde belongs to the Foundry boundary, not to the Citadel.
 
-> Then these specialists are required.
-> This is the operational sequence.
-> These contracts govern the work.
-> These review gates must pass before trust is granted.
+She is the gentle help-desk clerk of the Foundry.
+
+Her duties are limited:
+- receive operator input,
+- ask basic clarification questions when necessary,
+- normalize the request into an intake packet,
+- deliver the request to the Citadel,
+- return the final result to the operator.
+
+Isolde is not a strategist, commander, critic, archivist, persona architect, or execution specialist.
+
+All operator-agent communication should pass through Isolde.
+The operator does not speak directly to internal Foundry components.
+Internal Foundry components do not speak directly to the operator.
+
+## Internal Command: The Citadel
+
+The Citadel is internal to the Foundry.
+
+It is not the point of entry.
+It is not the exit channel.
+It does not perform help-desk duties.
+It does not communicate directly with the operator.
+
+The Citadel receives normalized intake from Isolde and converts it into operational direction.
+
+Its duties are:
+- classify the mission,
+- decompose the objective,
+- identify required capabilities,
+- select or requisition specialists,
+- define the operational topology,
+- attach governance and review gates,
+- dispatch work,
+- consolidate status for return through Isolde.
+
+The Citadel may call on Persona Factory, Blackquill, Carmilla, operators, or Agent Framework. It does not replace them.
 
 ## Purpose
 
@@ -61,16 +96,31 @@ The Foundry translates outcome intent into organized capability.
 ## Foundry Flow
 
 ```txt
-Intent Intake
-  -> Objective Clarification
-    -> Capability Decomposition
-      -> Specialist Selection
-        -> Operational Topology
-          -> AFW Governance Attachment
-            -> Execution Dispatch
-              -> Blackquill Review Gate
-                -> Final Disposition
+Operator Intent
+  -> Isolde Intake
+    -> Basic Clarification if Required
+      -> Intake Packet
+        -> Citadel Mission Classification
+          -> Objective Decomposition
+            -> Capability Decomposition
+              -> Specialist Selection
+                -> Operational Topology
+                  -> AFW Governance Attachment
+                    -> Execution Dispatch
+                      -> Blackquill Review Gate
+                        -> Carmilla Archive / Continuity Update
+                          -> Final Disposition
+                            -> Isolde Return to Operator
 ```
+
+## Communication Rule
+
+```txt
+Operator <-> Isolde <-> Foundry Internals
+```
+
+No internal Foundry component should bypass Isolde when communicating with the operator.
+
 ## Reinforced Constraints
 
 ### Operational-First Doctrine
@@ -78,6 +128,18 @@ Intent Intake
 The Foundry must remain operationally tangible.
 
 Doctrine without executable mission structure becomes abstraction.
+
+### Boundary Discipline
+
+Isolde owns communication.
+The Citadel owns orchestration.
+Blackquill owns critique.
+Carmilla owns memory.
+Operators own execution.
+Persona Factory owns personnel generation.
+Agent Framework owns governance substrate.
+
+No component should absorb another component's primary responsibility.
 
 ### Mission Blueprints
 
@@ -108,7 +170,7 @@ Specialists should follow:
 core archetype
 -> specialization
 -> runtime implementation
-````
+```
 
 Avoid uncontrolled profession proliferation.
 
@@ -135,6 +197,9 @@ This repository should define:
 - topology templates,
 - AFW integration points,
 - Blackquill review-gate attachments,
+- Carmilla archival continuity points,
+- Isolde communication boundary rules,
+- Citadel orchestration doctrine,
 - product/monetization concepts.
 
 ## Not a Prompt Library
