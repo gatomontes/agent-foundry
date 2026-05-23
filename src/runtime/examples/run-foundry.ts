@@ -4,6 +4,7 @@ import { stdin as input, stdout as output } from "node:process";
 import { CitadelStub } from "../boundary/citadel-stub.js";
 import { FoundryRook } from "../boundary/foundry-rook.js";
 import { Isolde } from "../boundary/isolde.js";
+import { materializeOutputStructure } from "../output/carmilla.js";
 import {
   buildActivationSummary,
   buildProductionOrderSummary,
@@ -63,10 +64,20 @@ async function main(): Promise<void> {
         }
 
         const initiated = foundryRook.initiateProduction(outcome.packet);
+        const materialized = await materializeOutputStructure(outcome.packet);
 
         for (const line of buildActivationSummary(initiated)) {
           output.write(`${line}\n`);
         }
+
+        output.write(`Isolde: Carmilla materialized output root -> ${materialized.rootPath}\n`);
+        output.write(`Isolde: Carmilla created directories -> ${materialized.directoriesCreated.join(", ")}\n`);
+        output.write(`Isolde: Carmilla created files -> ${materialized.filesCreated.join(", ")}\n`);
+        output.write(`Isolde: Critique report written to -> ${materialized.critiqueReportPath ?? "not-applicable"}\n`);
+        output.write(`Isolde: Audit report written to -> ${materialized.auditReportPath ?? "not-applicable"}\n`);
+        output.write(`Isolde: Failure path written to -> ${materialized.failurePathReportPath}\n`);
+        output.write(`Isolde: Hash manifest written to -> ${materialized.hashManifestPath}\n`);
+        output.write(`Isolde: Scribe report written to -> ${materialized.scribeReportPath}\n`);
 
         return;
       }

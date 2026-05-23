@@ -1,6 +1,7 @@
 import { assertNonEmpty } from "../shared/types.js";
 import { requireProfessions } from "../professions/registry.js";
 import { validateTopology } from "../topology/graph.js";
+import { createAuditScroll } from "./scribe.js";
 import type {
   CitadelRookReturnPacket,
   FoundryProductionPacket,
@@ -20,6 +21,10 @@ export function validateOperatorPromptRequest(packet: OperatorPromptRequest): Op
     throw new Error("operatorPromptRequest.returnRoute must be isolde.");
   }
 
+  if (packet.scroll.entries.length === 0) {
+    throw new Error("operatorPromptRequest.scroll must contain at least one entry.");
+  }
+
   return packet;
 }
 
@@ -32,6 +37,10 @@ export function validateFoundryProductionPacket(packet: FoundryProductionPacket)
 
   if (packet.requiredProfessionIds.length === 0) {
     throw new Error("foundryProductionPacket.requiredProfessionIds must contain at least one profession.");
+  }
+
+  if (packet.scroll.entries.length === 0) {
+    throw new Error("foundryProductionPacket.scroll must contain at least one entry.");
   }
 
   requireProfessions(packet.requiredProfessionIds);
@@ -66,6 +75,10 @@ export function normalizeCitadelReturnForFoundry(
 ): FoundryProductionPacket | OperatorPromptRequest {
   assertNonEmpty(packet.packetId, "citadelRookReturn.packetId");
   assertNonEmpty(packet.missionId, "citadelRookReturn.missionId");
+
+  if (packet.scroll.entries.length === 0) {
+    throw new Error("citadelRookReturn.scroll must contain at least one entry.");
+  }
 
   if (packet.source !== "citadel-rook") {
     throw new Error("Citadel return packet must originate from citadel-rook.");

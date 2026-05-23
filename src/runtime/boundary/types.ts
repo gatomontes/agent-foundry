@@ -1,5 +1,6 @@
 import type { ConsequenceTier, RuntimeReference, RuntimeTimestamp } from "../shared/types.js";
 import type { FlowTemplateId, MissionTopology } from "../topology/types.js";
+import type { AuditScroll } from "./scribe.js";
 
 export type CitadelReturnKind = "production-order" | "operator-prompt-request";
 
@@ -10,6 +11,7 @@ export interface OperatorPromptRequest {
   questions: string[];
   blockingIssues: string[];
   returnRoute: "isolde";
+  scroll: AuditScroll;
   createdAt: RuntimeTimestamp;
 }
 
@@ -25,6 +27,7 @@ export interface FoundryProductionPacket {
   optionalProfessionIds: string[];
   governanceNotes: string[];
   artifacts: RuntimeReference[];
+  scroll: AuditScroll;
   topology?: MissionTopology;
   createdAt: RuntimeTimestamp;
 }
@@ -34,6 +37,7 @@ export interface CitadelRookReturnPacket {
   missionId: string;
   source: "citadel-rook";
   returnKind: CitadelReturnKind;
+  scroll: AuditScroll;
   productionOrder?: FoundryProductionPacket;
   operatorPromptRequest?: OperatorPromptRequest;
   createdAt: RuntimeTimestamp;

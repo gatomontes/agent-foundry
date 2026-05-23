@@ -1,4 +1,5 @@
 import { assertNonEmpty, toTimestamp, type RuntimeTimestamp } from "../shared/types.js";
+import { createAuditScroll, recordScrollEntry } from "./scribe.js";
 import type { OperatorPromptRequest } from "./types.js";
 
 export interface OperatorIntent {
@@ -16,6 +17,7 @@ export interface IsoldeIntakePacket {
   notes: string[];
   normalizedBy: "isolde";
   destination: "foundry-rook";
+  scroll: import("./scribe.js").AuditScroll;
   createdAt: RuntimeTimestamp;
 }
 
@@ -49,8 +51,17 @@ export class Isolde {
       notes: intent.notes ?? [],
       normalizedBy: "isolde",
       destination: "foundry-rook",
+      scroll: createAuditScroll(`isolde-${intent.requestId}`),
       createdAt: toTimestamp(),
     };
+
+    packet.scroll.missionId = intent.requestId;
+    recordScrollEntry(
+      packet.scroll,
+      "isolde",
+      "packet-created",
+      `Isolde normalized operator request ${intent.requestId}.`,
+    );
 
     this.forwardedIntake.push(packet);
     return packet;
@@ -70,8 +81,17 @@ export class Isolde {
       notes: [...priorPacket.notes, ...answers.filter((answer) => answer.trim().length > 0)],
       normalizedBy: "isolde",
       destination: "foundry-rook",
+      scroll: priorPacket.scroll,
       createdAt: toTimestamp(),
     };
+
+    packet.scroll.packetId = packet.packetId;
+    recordScrollEntry(
+      packet.scroll,
+      "isolde",
+      "packet-repackaged",
+      `Isolde attached clarification answers for request ${priorPacket.requestId}.`,
+    );
 
     this.forwardedIntake.push(packet);
     return packet;

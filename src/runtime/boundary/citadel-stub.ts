@@ -1,5 +1,6 @@
 import { assertNonEmpty } from "../shared/types.js";
 import type { IsoldeIntakePacket } from "./isolde.js";
+import { CitadelScribe, recordScrollEntry } from "./scribe.js";
 import type { CitadelRookReturnPacket } from "./types.js";
 import {
   exampleProductionReturnPacket,
@@ -9,10 +10,12 @@ import {
 export class CitadelStub {
   readonly receivedIntake: IsoldeIntakePacket[];
   readonly emittedReturns: CitadelRookReturnPacket[];
+  readonly scribe: CitadelScribe;
 
   constructor() {
     this.receivedIntake = [];
     this.emittedReturns = [];
+    this.scribe = new CitadelScribe();
   }
 
   receiveFoundryBoundaryIntake(packet: IsoldeIntakePacket): CitadelRookReturnPacket {
@@ -20,6 +23,9 @@ export class CitadelStub {
     assertNonEmpty(packet.objective, "isoldeIntake.objective");
 
     this.receivedIntake.push(packet);
+    recordScrollEntry(packet.scroll, "citadel-rook", "packet-received", "Citadel Rook received the intake packet from Foundry.");
+    this.scribe.record(packet.scroll, "packet-recorded", "Citadel Scribe recorded intake arrival.");
+    recordScrollEntry(packet.scroll, "citadel-core", "packet-reviewed", "Citadel reviewed the intake and determined the next governed response.");
 
     const loweredObjective = packet.objective.toLowerCase();
     const loweredNotes = packet.notes.map((note) => note.toLowerCase());
@@ -49,6 +55,7 @@ export class CitadelStub {
       missionId: productionOrder.missionId,
       source: productionReturn.source,
       returnKind: productionReturn.returnKind,
+      scroll: packet.scroll,
       productionOrder: {
         ...productionOrder,
         objective: packet.objective,
@@ -57,6 +64,7 @@ export class CitadelStub {
           ...productionOrder.governanceNotes,
           ...packet.notes,
         ],
+        scroll: packet.scroll,
       },
       createdAt: productionReturn.createdAt,
     };
@@ -75,9 +83,11 @@ export class CitadelStub {
       missionId: operatorPromptRequest.missionId,
       source: promptReturn.source,
       returnKind: promptReturn.returnKind,
+      scroll: packet.scroll,
       operatorPromptRequest: {
         ...operatorPromptRequest,
         reason: `Citadel requires clarification before production can begin for request ${packet.requestId}.`,
+        scroll: packet.scroll,
       },
       createdAt: promptReturn.createdAt,
     };

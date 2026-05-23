@@ -18,6 +18,7 @@ Phase 3 boundary alignment adds:
 
 - `boundary/`
 - `examples/`
+- `output/`
 
 The initial runtime is intentionally small. It exists to transform doctrine into constrained, typed, inspectable software without pretending the full Foundry already exists.
 
@@ -28,3 +29,9 @@ To inspect the current boundary flow from the terminal, run:
 To invoke the Foundry interactively through Isolde, run:
 
 `npm.cmd run foundry`
+
+Mission output should canonically land under:
+
+`./output/{project-slug}/`
+
+Carmilla proposes the mission-specific output structure when a governed production-ready packet arrives.

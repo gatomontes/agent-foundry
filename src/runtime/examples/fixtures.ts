@@ -1,5 +1,6 @@
 import { toTimestamp } from "../shared/types.js";
 import type { OperatorIntent } from "../boundary/isolde.js";
+import { createAuditScroll, recordScrollEntry } from "../boundary/scribe.js";
 import type {
   CitadelRookReturnPacket,
   FoundryProductionPacket,
@@ -72,6 +73,9 @@ export function exampleClarificationIntent(): OperatorIntent {
 }
 
 export function exampleProductionOrder(): FoundryProductionPacket {
+  const scroll = createAuditScroll("fp-001", "mission-saas-001");
+  recordScrollEntry(scroll, "citadel-rook", "packet-returned", "Example production packet prepared by Citadel Rook.");
+
   return {
     packetId: "fp-001",
     missionId: "mission-saas-001",
@@ -94,12 +98,16 @@ export function exampleProductionOrder(): FoundryProductionPacket {
       { id: "artifact-arch-001", kind: "architecture-brief" },
       { id: "artifact-plan-001", kind: "implementation-plan" },
     ],
+    scroll,
     topology: exampleSaasBuildTopology(),
     createdAt: toTimestamp(),
   };
 }
 
 export function exampleOperatorPromptRequest(): OperatorPromptRequest {
+  const scroll = createAuditScroll("opr-001", "mission-saas-clarify-001");
+  recordScrollEntry(scroll, "citadel-rook", "packet-returned", "Example clarification packet prepared by Citadel Rook.");
+
   return {
     packetId: "opr-001",
     missionId: "mission-saas-clarify-001",
@@ -113,28 +121,35 @@ export function exampleOperatorPromptRequest(): OperatorPromptRequest {
       "Consequence tier may change depending on production target.",
     ],
     returnRoute: "isolde",
+    scroll,
     createdAt: toTimestamp(),
   };
 }
 
 export function exampleProductionReturnPacket(): CitadelRookReturnPacket {
+  const productionOrder = exampleProductionOrder();
+
   return {
     packetId: "cr-return-001",
     missionId: "mission-saas-001",
     source: "citadel-rook",
     returnKind: "production-order",
-    productionOrder: exampleProductionOrder(),
+    scroll: productionOrder.scroll,
+    productionOrder,
     createdAt: toTimestamp(),
   };
 }
 
 export function examplePromptReturnPacket(): CitadelRookReturnPacket {
+  const operatorPromptRequest = exampleOperatorPromptRequest();
+
   return {
     packetId: "cr-return-002",
     missionId: "mission-saas-clarify-001",
     source: "citadel-rook",
     returnKind: "operator-prompt-request",
-    operatorPromptRequest: exampleOperatorPromptRequest(),
+    scroll: operatorPromptRequest.scroll,
+    operatorPromptRequest,
     createdAt: toTimestamp(),
   };
 }
