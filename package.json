@@ -1,0 +1,17 @@
+{
+  "name": "foundry-runtime",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Phase 1 runtime control spine for The Foundry.",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "example": "npm.cmd run build && node dist/runtime/examples/run-example.js",
+    "foundry": "npm.cmd run build && node dist/runtime/examples/run-foundry.js"
+  },
+  "devDependencies": {
+    "@types/node": "^24.6.0",
+    "typescript": "^5.9.2"
+  }
+}

@@ -2,16 +2,15 @@
 
 The factory that turns cognition into action.
 
-Agent Foundry is the human-facing assembly layer for governed multi-agent work.
+Agent Foundry is the production and assembly layer for governed multi-agent work.
 
-It receives raw intent and converts it into:
-- capability decomposition,
-- specialist staffing,
-- operational topology,
-- governance attachment,
-- execution flow,
-- review gates,
-- final disposition.
+It receives governed packets from Citadel and converts them into:
+- production initiation,
+- specialist staffing activation,
+- operational topology materialization,
+- execution dispatch,
+- continuity-preserving operator prompting through Isolde,
+- governed return handling.
 
 ## Core Distinction
 
@@ -33,15 +32,15 @@ That is Carmilla.
 
 ## Foundry Boundary: Isolde
 
-Isolde belongs to the Foundry boundary, not to the Citadel.
+Isolde belongs to the outer Foundry boundary, not to the Citadel.
 
 She is the gentle help-desk clerk of the Foundry.
 
 Her duties are limited:
 - receive operator input,
 - ask basic clarification questions when necessary,
-- normalize the request into an intake packet,
-- deliver the request to the Citadel,
+- hand the request to Foundry Rook,
+- return operator prompts and final results issued through Foundry Rook,
 - return the final result to the operator.
 
 Isolde is not a strategist, commander, critic, archivist, persona architect, or execution specialist.
@@ -50,28 +49,32 @@ All operator-agent communication should pass through Isolde.
 The operator does not speak directly to internal Foundry components.
 Internal Foundry components do not speak directly to the operator.
 
-## Internal Command: The Citadel
+## Foundry Boundary: Rook
 
-The Citadel is internal to the Foundry.
-
-It is not the point of entry.
-It is not the exit channel.
-It does not perform help-desk duties.
-It does not communicate directly with the operator.
-
-The Citadel receives normalized intake from Isolde and converts it into operational direction.
+Foundry Rook is the Foundry-side production ingress boundary.
 
 Its duties are:
-- classify the mission,
-- decompose the objective,
-- identify required capabilities,
-- select or requisition specialists,
-- define the operational topology,
-- attach governance and review gates,
-- dispatch work,
-- consolidate status for return through Isolde.
+- receive governed return packets from Citadel Rook,
+- distinguish production initiation from operator re-prompt requirements,
+- normalize production packets for internal Foundry runtime activation,
+- hand operator prompt requests to Isolde,
+- preserve boundary traceability between governance and production.
 
-The Citadel may call on Persona Factory, Blackquill, Carmilla, operators, or Agent Framework. It does not replace them.
+Foundry Rook does not determine governance law.
+It activates governed work.
+
+## Relationship To The Citadel
+
+The Citadel is not internal to the Foundry.
+
+The Citadel governs operational law through its own Rook boundary.
+
+Citadel receives normalized requests through Citadel Rook and returns one of two governed outcomes back across the wall:
+- a production order for Foundry to initiate,
+- an operator prompt request for Isolde to surface before production can continue.
+
+Foundry consumes Citadel outputs.
+It does not replace Citadel governance.
 
 ## Purpose
 
@@ -91,35 +94,31 @@ Humans request outcomes:
 - design a compliance workflow,
 - investigate a security incident.
 
-The Foundry translates outcome intent into organized capability.
+The Foundry translates governed mission intent into organized production capability.
 
 ## Foundry Flow
 
 ```txt
 Operator Intent
-  -> Isolde Intake
-    -> Basic Clarification if Required
-      -> Intake Packet
-        -> Citadel Mission Classification
-          -> Objective Decomposition
-            -> Capability Decomposition
-              -> Specialist Selection
-                -> Operational Topology
-                  -> AFW Governance Attachment
-                    -> Execution Dispatch
-                      -> Blackquill Review Gate
-                        -> Carmilla Archive / Continuity Update
-                          -> Final Disposition
-                            -> Isolde Return to Operator
+  -> Isolde
+    -> Foundry Rook
+      -> Citadel Rook
+        -> Citadel
+          -> Citadel Rook Return Packet
+            -> Foundry Rook
+              -> either:
+                 1. initiate production
+                 2. hand off operator prompt to Isolde
 ```
 
 ## Communication Rule
 
 ```txt
-Operator <-> Isolde <-> Foundry Internals
+Operator <-> Isolde <-> Foundry Rook <-> Citadel Rook <-> Citadel
 ```
 
 No internal Foundry component should bypass Isolde when communicating with the operator.
+No production component should bypass Foundry Rook when consuming Citadel output.
 
 ## Reinforced Constraints
 
@@ -131,8 +130,9 @@ Doctrine without executable mission structure becomes abstraction.
 
 ### Boundary Discipline
 
-Isolde owns communication.
-The Citadel owns orchestration.
+Isolde owns operator communication.
+Foundry Rook owns production ingress and operator re-prompt routing.
+The Citadel owns governance planning and mission law.
 Blackquill owns critique.
 Carmilla owns memory.
 Operators own execution.
@@ -190,16 +190,17 @@ cathedral, not cosplay
 
 This repository should define:
 - intake patterns,
+- boundary packet schemas,
 - capability maps,
 - specialist catalogs,
 - assembly protocols,
 - mission blueprints,
 - topology templates,
-- AFW integration points,
+- Citadel integration points,
 - Blackquill review-gate attachments,
 - Carmilla archival continuity points,
 - Isolde communication boundary rules,
-- Citadel orchestration doctrine,
+- Foundry Rook production doctrine,
 - product/monetization concepts.
 
 ## Not a Prompt Library
@@ -210,4 +211,4 @@ It is a cognitive assembly system.
 
 Its value is not that it can summon personas.
 
-Its value is that it knows which minds are required, in what order, under what governance, and with what review gates.
+Its value is that it knows how to materialize governed orders into production, and how to route unresolved needs back to the operator without collapsing governance into implementation.
