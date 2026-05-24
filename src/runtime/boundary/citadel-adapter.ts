@@ -89,6 +89,23 @@ export class CitadelAdapter {
     const templateId = classifyTemplate(packet);
     const consequenceTier = classifyTier(packet);
     const executionMode = requiresFailureCase(packet) ? "verification-failure" : "normal";
+    const proposalTitle =
+      executionMode === "verification-failure"
+        ? "Controlled verification-failure validation run"
+        : `Governed ${templateId} production initiation`;
+    const expectedArtifacts = [
+      "Critique report",
+      "Audit report",
+      "Failure path report",
+      "Hash manifest",
+      "Scribe report",
+    ];
+    const risks = [
+      "Implementation outputs remain untrusted until verification completes.",
+      consequenceTier === "critical"
+        ? "Critical consequence tier requires especially careful downstream handling."
+        : `Consequence tier is governed as ${consequenceTier} and may constrain execution choices.`,
+    ];
 
     const governedOrder: FoundryProductionPacket = {
       ...productionOrder,
@@ -100,6 +117,19 @@ export class CitadelAdapter {
         executionMode === "verification-failure"
           ? `Citadel approved a controlled failure-case production run for request ${packet.requestId}.`
           : `Citadel approved production initiation for request ${packet.requestId}.`,
+      proposal: {
+        title: proposalTitle,
+        rationale:
+          executionMode === "verification-failure"
+            ? "Validate the verification, critique, audit, and restoration chain under a deliberate failure condition."
+            : `Initiate a ${templateId} flow that matches the stated objective and preserved operator constraints.`,
+        plannedFlow:
+          executionMode === "verification-failure"
+            ? "Run the requested work through a governed verification-failure path, preserve evidence, and require restoration-aware reporting."
+            : "Proceed through the governed topology in order, preserve artifact lineage, and hold final trust pending verification.",
+        expectedArtifacts,
+        risks,
+      },
       consequenceTier,
       templateId,
       executionMode,

@@ -34,9 +34,20 @@ export function validateFoundryProductionPacket(packet: FoundryProductionPacket)
   assertNonEmpty(packet.citadelRookReference, "foundryProductionPacket.citadelRookReference");
   assertNonEmpty(packet.objective, "foundryProductionPacket.objective");
   assertNonEmpty(packet.summary, "foundryProductionPacket.summary");
+  assertNonEmpty(packet.proposal.title, "foundryProductionPacket.proposal.title");
+  assertNonEmpty(packet.proposal.rationale, "foundryProductionPacket.proposal.rationale");
+  assertNonEmpty(packet.proposal.plannedFlow, "foundryProductionPacket.proposal.plannedFlow");
 
   if (packet.requiredProfessionIds.length === 0) {
     throw new Error("foundryProductionPacket.requiredProfessionIds must contain at least one profession.");
+  }
+
+  if (packet.proposal.expectedArtifacts.length === 0) {
+    throw new Error("foundryProductionPacket.proposal.expectedArtifacts must contain at least one artifact.");
+  }
+
+  if (packet.proposal.risks.length === 0) {
+    throw new Error("foundryProductionPacket.proposal.risks must contain at least one risk.");
   }
 
   if (packet.scroll.entries.length === 0) {

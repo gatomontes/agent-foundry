@@ -91,6 +91,23 @@ export function exampleProductionOrder(): FoundryProductionPacket {
     citadelRookReference: "cr-001",
     objective: "Build the initial governed SaaS runtime shell.",
     summary: "Citadel approved production initiation for the initial Foundry runtime shell.",
+    proposal: {
+      title: "Governed SaaS runtime shell initiation",
+      rationale: "Start with the smallest coherent implementation slice while preserving governance and verification requirements.",
+      plannedFlow:
+        "Move from intake through architecture, implementation, verification, and disposition without bypassing governed review points.",
+      expectedArtifacts: [
+        "Critique report",
+        "Audit report",
+        "Failure path report",
+        "Hash manifest",
+        "Scribe report",
+      ],
+      risks: [
+        "Implementation outputs remain untrusted until verification completes.",
+        "Early topology assumptions may need revision as scope becomes more concrete.",
+      ],
+    },
     consequenceTier: "routine",
     templateId: "saas-build",
     requiredProfessionIds: [

@@ -15,12 +15,21 @@ export interface OperatorPromptRequest {
   createdAt: RuntimeTimestamp;
 }
 
+export interface CitadelProposal {
+  title: string;
+  rationale: string;
+  plannedFlow: string;
+  expectedArtifacts: string[];
+  risks: string[];
+}
+
 export interface FoundryProductionPacket {
   packetId: string;
   missionId: string;
   citadelRookReference: string;
   objective: string;
   summary: string;
+  proposal: CitadelProposal;
   consequenceTier: ConsequenceTier;
   templateId: FlowTemplateId;
   executionMode?: "normal" | "verification-failure";
