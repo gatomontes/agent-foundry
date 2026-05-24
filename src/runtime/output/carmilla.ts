@@ -1,9 +1,11 @@
 import { createHash } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import type { FoundryProductionPacket } from "../boundary/types.js";
 import type { ScrollEntry } from "../boundary/scribe.js";
+import { requireProfessions } from "../professions/registry.js";
+import type { ProfessionManifest } from "../professions/types.js";
 import type { OutputStructureProposal } from "./types.js";
 import type { OutputMaterializationResult } from "./types.js";
 
@@ -99,6 +101,15 @@ function projectSlugFor(packet: FoundryProductionPacket): string {
   return projectSlug.length > 0 ? projectSlug : slugify(packet.missionId);
 }
 
+function flatArtifactPath(rootPath: string, prefix: string, fileName: string): string {
+  const [, stageName = ""] = prefix.split("-", 2);
+  const normalizedFileName =
+    stageName.length > 0 && fileName.startsWith(`${stageName}-`)
+      ? fileName.slice(stageName.length + 1)
+      : fileName;
+  return `${rootPath}/${prefix}-${normalizedFileName}`;
+}
+
 export function proposeOutputStructure(packet: FoundryProductionPacket): OutputStructureProposal {
   const projectSlug = projectSlugFor(packet);
   const rootPath = `output/${projectSlug}`;
@@ -107,30 +118,20 @@ export function proposeOutputStructure(packet: FoundryProductionPacket): OutputS
     return {
       projectSlug,
       rootPath,
-      directories: [
-        `${rootPath}/00-intake`,
-        `${rootPath}/01-orders`,
-        `${rootPath}/02-execution`,
-        `${rootPath}/03-verification`,
-        `${rootPath}/04-critique`,
-        `${rootPath}/05-audit`,
-        `${rootPath}/06-restoration`,
-        `${rootPath}/07-archive`,
-        `${rootPath}/08-scribe`,
-      ],
+      directories: [rootPath],
       canonicalFiles: [
-        `${rootPath}/00-intake/mission.md`,
-        `${rootPath}/01-orders/production-order.md`,
-        `${rootPath}/03-verification/verification-report.md`,
-        `${rootPath}/04-critique/critique-report.md`,
-        `${rootPath}/05-audit/audit-report.md`,
-        `${rootPath}/06-restoration/failure-path.md`,
-        `${rootPath}/08-scribe/output-manifest.sha256`,
-        `${rootPath}/08-scribe/scribe-report.md`,
+        flatArtifactPath(rootPath, "00-intake", "mission.md"),
+        flatArtifactPath(rootPath, "01-orders", "production-order.md"),
+        flatArtifactPath(rootPath, "03-verification", "verification-report.md"),
+        flatArtifactPath(rootPath, "04-critique", "critique-report.md"),
+        flatArtifactPath(rootPath, "05-audit", "audit-report.md"),
+        flatArtifactPath(rootPath, "06-restoration", "failure-path.md"),
+        flatArtifactPath(rootPath, "08-scribe", "output-manifest.sha256"),
+        flatArtifactPath(rootPath, "08-scribe", "scribe-report.md"),
       ],
       rationale: [
-        "Verification-heavy work requires strong separation between execution, verification, critique, and audit custody.",
-        "Restoration and archive surfaces are pre-allocated because high-consequence work assumes interruption and review density.",
+        "Verification-heavy work still requires strong separation between execution, verification, critique, and audit custody.",
+        "Artifacts are flattened into a single output root, so filename prefixes preserve stage order without forcing one-folder-per-output.",
       ],
       decidedBy: "carmilla",
     };
@@ -140,27 +141,20 @@ export function proposeOutputStructure(packet: FoundryProductionPacket): OutputS
     return {
       projectSlug,
       rootPath,
-      directories: [
-        `${rootPath}/00-intake`,
-        `${rootPath}/01-brief`,
-        `${rootPath}/02-prototype`,
-        `${rootPath}/03-verification`,
-        `${rootPath}/04-critique`,
-        `${rootPath}/05-failure`,
-        `${rootPath}/06-scribe`,
-      ],
+      directories: [rootPath],
       canonicalFiles: [
-        `${rootPath}/00-intake/mission.md`,
-        `${rootPath}/01-brief/prototype-brief.md`,
-        `${rootPath}/03-verification/checks.md`,
-        `${rootPath}/04-critique/critique-report.md`,
-        `${rootPath}/05-failure/failure-path.md`,
-        `${rootPath}/06-scribe/output-manifest.sha256`,
-        `${rootPath}/06-scribe/scribe-report.md`,
+        flatArtifactPath(rootPath, "00-intake", "mission.md"),
+        flatArtifactPath(rootPath, "01-brief", "prototype-brief.md"),
+        flatArtifactPath(rootPath, "03-verification", "checks.md"),
+        flatArtifactPath(rootPath, "04-critique", "critique-report.md"),
+        flatArtifactPath(rootPath, "05-failure", "failure-path.md"),
+        flatArtifactPath(rootPath, "06-scribe", "output-manifest.sha256"),
+        flatArtifactPath(rootPath, "06-scribe", "scribe-report.md"),
       ],
       rationale: [
         "Rapid prototype work favors low-friction structure while still preserving mission, prototype, and verification custody.",
         "Even provisional work should preserve critique and a declared failure path so experimentation does not masquerade as governance completeness.",
+        "Flattened filenames keep the output root easy to scan while retaining stage identity.",
       ],
       decidedBy: "carmilla",
     };
@@ -169,33 +163,22 @@ export function proposeOutputStructure(packet: FoundryProductionPacket): OutputS
   return {
     projectSlug,
     rootPath,
-    directories: [
-      `${rootPath}/00-intake`,
-      `${rootPath}/01-orders`,
-      `${rootPath}/02-architecture`,
-      `${rootPath}/03-implementation`,
-      `${rootPath}/04-verification`,
-      `${rootPath}/05-critique`,
-      `${rootPath}/06-audit`,
-      `${rootPath}/07-release`,
-      `${rootPath}/08-restoration`,
-      `${rootPath}/09-scribe`,
-    ],
+    directories: [rootPath],
     canonicalFiles: [
-      `${rootPath}/00-intake/mission.md`,
-      `${rootPath}/01-orders/production-order.md`,
-      `${rootPath}/02-architecture/architecture-brief.md`,
-      `${rootPath}/04-verification/verification-report.md`,
-      `${rootPath}/05-critique/critique-report.md`,
-      `${rootPath}/06-audit/audit-report.md`,
-      `${rootPath}/07-release/operator-summary.md`,
-      `${rootPath}/08-restoration/failure-path.md`,
-      `${rootPath}/09-scribe/output-manifest.sha256`,
-      `${rootPath}/09-scribe/scribe-report.md`,
+      flatArtifactPath(rootPath, "00-intake", "mission.md"),
+      flatArtifactPath(rootPath, "01-orders", "production-order.md"),
+      flatArtifactPath(rootPath, "02-architecture", "architecture-brief.md"),
+      flatArtifactPath(rootPath, "04-verification", "verification-report.md"),
+      flatArtifactPath(rootPath, "05-critique", "critique-report.md"),
+      flatArtifactPath(rootPath, "06-audit", "audit-report.md"),
+      flatArtifactPath(rootPath, "07-release", "operator-summary.md"),
+      flatArtifactPath(rootPath, "08-restoration", "failure-path.md"),
+      flatArtifactPath(rootPath, "09-scribe", "output-manifest.sha256"),
+      flatArtifactPath(rootPath, "09-scribe", "scribe-report.md"),
     ],
     rationale: [
       "SaaS build work benefits from explicit separation between architecture, implementation, verification, and release-facing output.",
-      "Archive continuity is preserved from the start so output does not collapse into an undifferentiated artifact pile.",
+      "Flattened artifact naming keeps the project root readable while preserving sequence and custody stage in the filename itself.",
       "Distinct critique and audit artifacts preserve independent attestation rather than collapsing all trust claims into verification alone.",
     ],
     decidedBy: "carmilla",
@@ -212,6 +195,64 @@ function renderScrollEntries(entries: ScrollEntry[]): string {
       return `${index + 1}. ${entry.at} | ${entry.station} | ${entry.action}${latencySuffix} | ${entry.summary}`;
     })
     .join("\n");
+}
+
+function renderBulletList(values: string[], fallback = "- none"): string {
+  return values.length > 0 ? values.map((value) => `- ${value}`).join("\n") : fallback;
+}
+
+function findProfessions(professionIds: string[]): ProfessionManifest[] {
+  return professionIds.length > 0 ? requireProfessions(professionIds) : [];
+}
+
+function renderProfessionSummaries(professionIds: string[]): string {
+  const professions = findProfessions(professionIds);
+  return professions.length > 0
+    ? professions.map((profession) => `- ${profession.name} (${profession.id}): ${profession.purpose}`).join("\n")
+    : "- none";
+}
+
+function renderProfessionArtifactExpectations(professions: ProfessionManifest[]): string {
+  return professions.length > 0
+    ? professions
+        .map((profession) => `- ${profession.name}: ${profession.expectedArtifacts.join(", ")}`)
+        .join("\n")
+    : "- none";
+}
+
+function renderTopologyNodes(packet: FoundryProductionPacket): string {
+  const nodes = packet.topology?.nodes ?? [];
+
+  return nodes.length > 0
+    ? nodes
+        .map((node) => {
+          const profession = node.professionId ? findProfessions([node.professionId])[0] : null;
+          return `- ${node.id}: ${node.label} [${node.kind}]${
+            profession ? ` -> ${profession.name}` : ""
+          }${node.required ? " (required)" : " (optional)"}`;
+        })
+        .join("\n")
+    : "- topology unresolved";
+}
+
+function renderTopologyEdges(packet: FoundryProductionPacket): string {
+  const edges = packet.topology?.edges ?? [];
+
+  return edges.length > 0
+    ? edges.map((edge) => `- ${edge.from} -> ${edge.to} (${edge.kind})`).join("\n")
+    : "- topology edges unresolved";
+}
+
+function nextActiveNodeLine(packet: FoundryProductionPacket): string {
+  const nodes = packet.topology?.nodes ?? [];
+  const nextNode = nodes[1] ?? nodes[0] ?? null;
+
+  if (!nextNode) {
+    return "Next active node unresolved.";
+  }
+
+  const profession = nextNode.professionId ? findProfessions([nextNode.professionId])[0] : null;
+  return `${nextNode.label} (${nextNode.id})${profession ? ` -> ${profession.name}` : ""}`;
 }
 
 export function renderScribeReport(packet: FoundryProductionPacket): string {
@@ -382,13 +423,42 @@ function renderFailurePath(packet: FoundryProductionPacket): string {
 }
 
 function renderMissionFile(packet: FoundryProductionPacket): string {
+  const requiredProfessions = findProfessions(packet.requiredProfessionIds);
+  const optionalProfessions = findProfessions(packet.optionalProfessionIds);
+
   return [
     "# Mission",
     "",
     `Mission: ${packet.missionId}`,
+    `Packet: ${packet.packetId}`,
     `Objective: ${packet.objective}`,
+    `Summary: ${packet.summary}`,
     `Template: ${packet.templateId}`,
     `Tier: ${packet.consequenceTier}`,
+    "",
+    "## Governance Notes",
+    "",
+    renderBulletList(packet.governanceNotes),
+    "",
+    "## Required Professions",
+    "",
+    renderProfessionSummaries(packet.requiredProfessionIds),
+    "",
+    "## Optional Professions",
+    "",
+    renderProfessionSummaries(packet.optionalProfessionIds),
+    "",
+    "## Expected Artifact Families",
+    "",
+    renderProfessionArtifactExpectations([...requiredProfessions, ...optionalProfessions]),
+    "",
+    "## Ordered Topology",
+    "",
+    renderTopologyNodes(packet),
+    "",
+    "## Flow Edges",
+    "",
+    renderTopologyEdges(packet),
     "",
   ].join("\n");
 }
@@ -409,16 +479,58 @@ function renderProductionOrderFile(packet: FoundryProductionPacket): string {
     `Required Professions: ${packet.requiredProfessionIds.join(", ")}`,
     `Optional Professions: ${packet.optionalProfessionIds.join(", ") || "none"}`,
     "",
+    "## Governance Instructions",
+    "",
+    renderBulletList(packet.governanceNotes),
+    "",
+    "## Runtime Artifacts Declared By Citadel",
+    "",
+    renderBulletList(packet.artifacts.map((artifact) => `${artifact.id} (${artifact.kind})`)),
+    "",
+    "## Next Active Node",
+    "",
+    nextActiveNodeLine(packet),
+    "",
   ].join("\n");
 }
 
 function renderArchitectureBrief(packet: FoundryProductionPacket): string {
+  const requiredProfessions = findProfessions(packet.requiredProfessionIds);
+
   return [
     "# Architecture Brief",
     "",
     `Mission: ${packet.missionId}`,
+    `Objective: ${packet.objective}`,
     "",
-    "The current structure preserves intake, architecture, implementation, verification, critique, audit, release, restoration, and scribe custody as separate output surfaces.",
+    "## Architectural Intent",
+    "",
+    `The governed runtime is ordered under the ${packet.templateId} template with ${packet.consequenceTier} consequence handling.`,
+    "The structure preserves intake, architecture, implementation, verification, critique, audit, release, restoration, and scribe custody as separate output surfaces.",
+    "",
+    "## Topology Nodes",
+    "",
+    renderTopologyNodes(packet),
+    "",
+    "## Flow Edges",
+    "",
+    renderTopologyEdges(packet),
+    "",
+    "## Required Profession Contributions",
+    "",
+    renderProfessionSummaries(packet.requiredProfessionIds),
+    "",
+    "## Boundary Constraints",
+    "",
+    renderBulletList([
+      "Citadel defines the governed packet and does not collapse into Foundry implementation authority.",
+      "Carmilla canonizes the output structure but does not alter mission governance.",
+      "Verification remains mandatory before any trusted disposition.",
+    ]),
+    "",
+    "## Primary Artifact Expectations",
+    "",
+    renderProfessionArtifactExpectations(requiredProfessions),
     "",
   ].join("\n");
 }
@@ -428,6 +540,16 @@ function renderOperatorSummary(packet: FoundryProductionPacket): string {
     "# Operator Summary",
     "",
     `Mission ${packet.missionId} has been activated under ${packet.templateId} with ${packet.requiredProfessionIds.join(", ")} as required professions.`,
+    "",
+    "## Immediate Understanding",
+    "",
+    `Objective: ${packet.objective}`,
+    `Execution mode: ${packet.executionMode ?? "normal"}`,
+    `Next active node: ${nextActiveNodeLine(packet)}`,
+    "",
+    "## Governance Reminders",
+    "",
+    renderBulletList(packet.governanceNotes),
     "",
   ].join("\n");
 }
@@ -439,6 +561,14 @@ function renderPrototypeBrief(packet: FoundryProductionPacket): string {
     `Mission: ${packet.missionId}`,
     `Objective: ${packet.objective}`,
     "",
+    "## Prototype Intent",
+    "",
+    "This run optimizes for speed of architectural scaffolding while preserving explicit verification, critique, failure, and scribe surfaces.",
+    "",
+    "## Topology Nodes",
+    "",
+    renderTopologyNodes(packet),
+    "",
   ].join("\n");
 }
 
@@ -447,8 +577,12 @@ function renderPrototypeChecks(packet: FoundryProductionPacket): string {
     "# Prototype Checks",
     "",
     `Mission: ${packet.missionId}`,
+    "",
+    "## Checks",
+    "",
     "- Boundary flow reachable.",
     "- Minimal verification surface present.",
+    `- Next active node declared: ${nextActiveNodeLine(packet)}`,
     "",
   ].join("\n");
 }
@@ -486,6 +620,8 @@ export async function materializeOutputStructure(
   const plan = proposeOutputStructure(packet);
   const directoriesCreated: string[] = [];
   const filesCreated: string[] = [];
+
+  await rm(plan.rootPath, { recursive: true, force: true });
 
   for (const directory of plan.directories) {
     await mkdir(directory, { recursive: true });

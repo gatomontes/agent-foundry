@@ -42,7 +42,7 @@ When a governed production-ready packet arrives, Carmilla should propose:
 
 - project slug
 - root output path
-- ordered subdirectories
+- ordered stage prefixes
 - canonical files
 - rationale for structure
 
@@ -64,6 +64,7 @@ Carmilla may:
 - separate working artifacts from verification artifacts
 - preserve archival clarity
 - keep output structure reconstructable
+- flatten artifact placement when filename prefixes preserve custody order
 
 Carmilla may not:
 
