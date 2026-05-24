@@ -92,20 +92,33 @@ export function exampleProductionOrder(): FoundryProductionPacket {
     objective: "Build the initial governed SaaS runtime shell.",
     summary: "Citadel approved production initiation for the initial Foundry runtime shell.",
     proposal: {
-      title: "Governed SaaS runtime shell initiation",
-      rationale: "Start with the smallest coherent implementation slice while preserving governance and verification requirements.",
-      plannedFlow:
-        "Move from intake through architecture, implementation, verification, and disposition without bypassing governed review points.",
-      expectedArtifacts: [
-        "Critique report",
-        "Audit report",
-        "Failure path report",
-        "Hash manifest",
-        "Scribe report",
-      ],
-      risks: [
-        "Implementation outputs remain untrusted until verification completes.",
-        "Early topology assumptions may need revision as scope becomes more concrete.",
+      title: "Governed SaaS runtime shell improvement package",
+      summary: "Citadel proposes a concrete set of improvements to establish the first governed runtime slice without losing verification discipline.",
+      items: [
+        {
+          action: "Build the smallest governed runtime shell first",
+          purpose: "Create a practical first delivery slice instead of starting with a broad, vague system build.",
+          details:
+            "Anchor the first pass on a coherent runtime shell that preserves intake, architecture, implementation, verification, and disposition boundaries.",
+          expectedOutcome:
+            "The mission starts with a concrete deliverable that is small enough to execute and structured enough to govern.",
+        },
+        {
+          action: "Tighten verification before any trusted release claim",
+          purpose: "Prevent early implementation progress from being mistaken for validated delivery.",
+          details:
+            "Keep verification, critique, and audit distinct so the runtime cannot collapse trust decisions into a single optimistic pass.",
+          expectedOutcome:
+            "Operators can approve progress while still seeing clearly that trust remains gated by verification.",
+        },
+        {
+          action: "Strengthen output lineage and reviewability",
+          purpose: "Make future expansion, challenge, and restoration easier as the system grows.",
+          details:
+            "Preserve critique, audit, failure-path, manifest, and scribe artifacts as explicit companion outputs for the run.",
+          expectedOutcome:
+            "The resulting output package stays inspectable and defensible as downstream work builds on it.",
+        },
       ],
     },
     consequenceTier: "routine",

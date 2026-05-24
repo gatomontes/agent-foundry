@@ -6,6 +6,15 @@ function formatList(values: string[]): string {
   return values.length > 0 ? values.join(", ") : "none";
 }
 
+function formatProposalItems(packet: FoundryProductionPacket): string[] {
+  return packet.proposal.items.flatMap((item, index) => [
+    `Isolde: Proposal item ${index + 1} -> ${item.action}`,
+    `Isolde: Purpose -> ${item.purpose}`,
+    `Isolde: Details -> ${item.details}`,
+    `Isolde: Expected outcome -> ${item.expectedOutcome}`,
+  ]);
+}
+
 function formatTrail(packet: FoundryProductionPacket): string {
   return packet.scroll.entries.map((entry) => `${entry.station}:${entry.action}`).join(" -> ");
 }
@@ -29,10 +38,8 @@ export function buildProductionOrderSummary(packet: FoundryProductionPacket): st
     `Isolde: Objective -> ${packet.objective}`,
     `Isolde: Summary -> ${packet.summary}`,
     `Isolde: Citadel proposal -> ${packet.proposal.title}`,
-    `Isolde: Proposal rationale -> ${packet.proposal.rationale}`,
-    `Isolde: Proposed flow -> ${packet.proposal.plannedFlow}`,
-    `Isolde: Expected artifacts -> ${formatList(packet.proposal.expectedArtifacts)}`,
-    `Isolde: Proposal risks -> ${formatList(packet.proposal.risks)}`,
+    `Isolde: Proposal summary -> ${packet.proposal.summary}`,
+    ...formatProposalItems(packet),
     `Isolde: Packet -> ${packet.packetId} | Template -> ${packet.templateId} | Tier -> ${packet.consequenceTier}`,
     `Isolde: Execution mode -> ${packet.executionMode ?? "normal"}`,
     `Isolde: Required professions -> ${formatList(packet.requiredProfessionIds)}`,

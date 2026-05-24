@@ -35,19 +35,24 @@ export function validateFoundryProductionPacket(packet: FoundryProductionPacket)
   assertNonEmpty(packet.objective, "foundryProductionPacket.objective");
   assertNonEmpty(packet.summary, "foundryProductionPacket.summary");
   assertNonEmpty(packet.proposal.title, "foundryProductionPacket.proposal.title");
-  assertNonEmpty(packet.proposal.rationale, "foundryProductionPacket.proposal.rationale");
-  assertNonEmpty(packet.proposal.plannedFlow, "foundryProductionPacket.proposal.plannedFlow");
+  assertNonEmpty(packet.proposal.summary, "foundryProductionPacket.proposal.summary");
 
   if (packet.requiredProfessionIds.length === 0) {
     throw new Error("foundryProductionPacket.requiredProfessionIds must contain at least one profession.");
   }
 
-  if (packet.proposal.expectedArtifacts.length === 0) {
-    throw new Error("foundryProductionPacket.proposal.expectedArtifacts must contain at least one artifact.");
+  if (packet.proposal.items.length === 0) {
+    throw new Error("foundryProductionPacket.proposal.items must contain at least one proposal item.");
   }
 
-  if (packet.proposal.risks.length === 0) {
-    throw new Error("foundryProductionPacket.proposal.risks must contain at least one risk.");
+  for (const [index, item] of packet.proposal.items.entries()) {
+    assertNonEmpty(item.action, `foundryProductionPacket.proposal.items[${index}].action`);
+    assertNonEmpty(item.purpose, `foundryProductionPacket.proposal.items[${index}].purpose`);
+    assertNonEmpty(item.details, `foundryProductionPacket.proposal.items[${index}].details`);
+    assertNonEmpty(
+      item.expectedOutcome,
+      `foundryProductionPacket.proposal.items[${index}].expectedOutcome`,
+    );
   }
 
   if (packet.scroll.entries.length === 0) {

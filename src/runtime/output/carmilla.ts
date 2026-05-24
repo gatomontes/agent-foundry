@@ -201,6 +201,20 @@ function renderBulletList(values: string[], fallback = "- none"): string {
   return values.length > 0 ? values.map((value) => `- ${value}`).join("\n") : fallback;
 }
 
+function renderProposalItems(packet: FoundryProductionPacket): string {
+  return packet.proposal.items
+    .map(
+      (item, index) =>
+        [
+          `${index + 1}. ${item.action}`,
+          `   Purpose: ${item.purpose}`,
+          `   Details: ${item.details}`,
+          `   Expected outcome: ${item.expectedOutcome}`,
+        ].join("\n"),
+    )
+    .join("\n");
+}
+
 function findProfessions(professionIds: string[]): ProfessionManifest[] {
   return professionIds.length > 0 ? requireProfessions(professionIds) : [];
 }
@@ -436,6 +450,13 @@ function renderMissionFile(packet: FoundryProductionPacket): string {
     `Template: ${packet.templateId}`,
     `Tier: ${packet.consequenceTier}`,
     "",
+    "## Citadel Proposal",
+    "",
+    `Title: ${packet.proposal.title}`,
+    `Summary: ${packet.proposal.summary}`,
+    "",
+    renderProposalItems(packet),
+    "",
     "## Governance Notes",
     "",
     renderBulletList(packet.governanceNotes),
@@ -478,6 +499,13 @@ function renderProductionOrderFile(packet: FoundryProductionPacket): string {
     `Output Root: ${plan.rootPath}`,
     `Required Professions: ${packet.requiredProfessionIds.join(", ")}`,
     `Optional Professions: ${packet.optionalProfessionIds.join(", ") || "none"}`,
+    "",
+    "## Citadel Proposal",
+    "",
+    `Title: ${packet.proposal.title}`,
+    `Summary: ${packet.proposal.summary}`,
+    "",
+    renderProposalItems(packet),
     "",
     "## Governance Instructions",
     "",
@@ -546,6 +574,13 @@ function renderOperatorSummary(packet: FoundryProductionPacket): string {
     `Objective: ${packet.objective}`,
     `Execution mode: ${packet.executionMode ?? "normal"}`,
     `Next active node: ${nextActiveNodeLine(packet)}`,
+    "",
+    "## Approved Citadel Proposal",
+    "",
+    `Title: ${packet.proposal.title}`,
+    `Summary: ${packet.proposal.summary}`,
+    "",
+    renderProposalItems(packet),
     "",
     "## Governance Reminders",
     "",

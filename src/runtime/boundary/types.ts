@@ -17,10 +17,15 @@ export interface OperatorPromptRequest {
 
 export interface CitadelProposal {
   title: string;
-  rationale: string;
-  plannedFlow: string;
-  expectedArtifacts: string[];
-  risks: string[];
+  summary: string;
+  items: CitadelProposalItem[];
+}
+
+export interface CitadelProposalItem {
+  action: string;
+  purpose: string;
+  details: string;
+  expectedOutcome: string;
 }
 
 export interface FoundryProductionPacket {

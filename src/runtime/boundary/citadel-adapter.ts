@@ -91,21 +91,62 @@ export class CitadelAdapter {
     const executionMode = requiresFailureCase(packet) ? "verification-failure" : "normal";
     const proposalTitle =
       executionMode === "verification-failure"
-        ? "Controlled verification-failure validation run"
-        : `Governed ${templateId} production initiation`;
-    const expectedArtifacts = [
-      "Critique report",
-      "Audit report",
-      "Failure path report",
-      "Hash manifest",
-      "Scribe report",
-    ];
-    const risks = [
-      "Implementation outputs remain untrusted until verification completes.",
-      consequenceTier === "critical"
-        ? "Critical consequence tier requires especially careful downstream handling."
-        : `Consequence tier is governed as ${consequenceTier} and may constrain execution choices.`,
-    ];
+        ? "Controlled verification-failure validation package"
+        : `Governed ${templateId} improvement package`;
+    const proposalItems =
+      executionMode === "verification-failure"
+        ? [
+            {
+              action: "Run the requested work through a controlled verification-failure path",
+              purpose: "Prove that the governance chain behaves correctly when verification does not pass.",
+              details:
+                "Inject a deliberate verification failure, preserve the critique and audit trail, and route the packet through restoration-aware handling.",
+              expectedOutcome:
+                "The team gets evidence that failure, blockage, and restoration semantics are working before any trusted release claim is made.",
+            },
+            {
+              action: "Tighten release blocking around failed verification",
+              purpose: "Prevent failed outputs from drifting into operator-facing trust or downstream release paths.",
+              details:
+                "Keep release-facing disposition frozen whenever the controlled failure path is active and preserve the blocked packet for Citadel review.",
+              expectedOutcome:
+                "Failure artifacts remain visible, and the runtime demonstrates disciplined refusal rather than silent continuation.",
+            },
+            {
+              action: "Strengthen evidence preservation across the failure cycle",
+              purpose: "Make the failure test useful for future governance, critique, and audit review.",
+              details:
+                "Require the failure path, hash manifest, critique report, audit report, and scribe report to remain attached as a coherent evidence set.",
+              expectedOutcome:
+                "Citadel receives a reusable proof bundle showing what failed, why it failed, and how custody was preserved.",
+            },
+          ]
+        : [
+            {
+              action: "Build the smallest governed implementation slice first",
+              purpose: "Establish a concrete starting point without overcommitting to a broad or underspecified build.",
+              details:
+                "Use the selected template to begin with the first coherent capability and preserve the operator's stated constraints inside the governed packet.",
+              expectedOutcome:
+                "The team gets a practical first increment that can be executed, reviewed, and expanded without losing governance shape.",
+            },
+            {
+              action: "Tighten verification before any trusted disposition",
+              purpose: "Keep implementation momentum from being confused with validated delivery.",
+              details:
+                "Require the governed flow to pass through verification and keep critique and audit as distinct custody surfaces before trust claims are made.",
+              expectedOutcome:
+                "Outputs can move forward operationally while still being clearly marked as untrusted until verification is complete.",
+            },
+            {
+              action: "Strengthen artifact lineage and reporting",
+              purpose: "Make the work reviewable, challengeable, and restorable as the mission evolves.",
+              details:
+                "Preserve the critique report, audit report, failure path, hash manifest, and scribe report as explicit artifacts attached to the run.",
+              expectedOutcome:
+                "Operators and downstream reviewers can see what was proposed, what was produced, and how governance custody was maintained.",
+            },
+          ];
 
     const governedOrder: FoundryProductionPacket = {
       ...productionOrder,
@@ -119,16 +160,11 @@ export class CitadelAdapter {
           : `Citadel approved production initiation for request ${packet.requestId}.`,
       proposal: {
         title: proposalTitle,
-        rationale:
+        summary:
           executionMode === "verification-failure"
-            ? "Validate the verification, critique, audit, and restoration chain under a deliberate failure condition."
-            : `Initiate a ${templateId} flow that matches the stated objective and preserved operator constraints.`,
-        plannedFlow:
-          executionMode === "verification-failure"
-            ? "Run the requested work through a governed verification-failure path, preserve evidence, and require restoration-aware reporting."
-            : "Proceed through the governed topology in order, preserve artifact lineage, and hold final trust pending verification.",
-        expectedArtifacts,
-        risks,
+            ? "Citadel proposes a controlled failure-oriented run focused on validating blockage, evidence preservation, and restoration behavior."
+            : `Citadel proposes a concrete governed improvement package for ${packet.objective}.`,
+        items: proposalItems,
       },
       consequenceTier,
       templateId,
