@@ -7,6 +7,41 @@ import type { ScrollEntry } from "../boundary/scribe.js";
 import type { OutputStructureProposal } from "./types.js";
 import type { OutputMaterializationResult } from "./types.js";
 
+const STOP_WORDS = new Set([
+  "a",
+  "an",
+  "and",
+  "but",
+  "for",
+  "from",
+  "have",
+  "help",
+  "html",
+  "i",
+  "in",
+  "initial",
+  "is",
+  "me",
+  "need",
+  "not",
+  "of",
+  "or",
+  "output",
+  "pipeline",
+  "run",
+  "should",
+  "start",
+  "system",
+  "task",
+  "test",
+  "that",
+  "the",
+  "this",
+  "to",
+  "want",
+  "yet",
+]);
+
 function slugify(value: string): string {
   return value
     .toLowerCase()
@@ -15,9 +50,53 @@ function slugify(value: string): string {
     .slice(0, 48) || "mission-output";
 }
 
+function extractProjectSlug(packet: FoundryProductionPacket): string {
+  const corpus = `${packet.objective} ${packet.governanceNotes.join(" ")}`.toLowerCase();
+  const normalizedWords: string[] = corpus.match(/[a-z0-9]+/g) ?? [];
+  const preferredTerms: string[] = [
+    "payroll",
+    "employee",
+    "saas",
+    "homepage",
+    "runtime",
+    "shell",
+    "architecture",
+    "verification",
+    "failure",
+    "prototype",
+    "security",
+    "audit",
+  ];
+  const selectedTerms: string[] = [];
+
+  for (const term of preferredTerms) {
+    if (normalizedWords.includes(term) && !selectedTerms.includes(term)) {
+      selectedTerms.push(term);
+    }
+  }
+
+  for (const word of normalizedWords) {
+    if (STOP_WORDS.has(word) || selectedTerms.includes(word)) {
+      continue;
+    }
+
+    selectedTerms.push(word);
+
+    if (selectedTerms.length >= 4) {
+      break;
+    }
+  }
+
+  if (packet.executionMode === "verification-failure" && !selectedTerms.includes("failure")) {
+    selectedTerms.push("failure");
+  }
+
+  return slugify(selectedTerms.slice(0, 5).join("-"));
+}
+
 function projectSlugFor(packet: FoundryProductionPacket): string {
-  const objectiveSlug = slugify(packet.objective);
-  return objectiveSlug.length > 0 ? objectiveSlug : packet.missionId;
+  const projectSlug = extractProjectSlug(packet);
+  return projectSlug.length > 0 ? projectSlug : slugify(packet.missionId);
 }
 
 export function proposeOutputStructure(packet: FoundryProductionPacket): OutputStructureProposal {
@@ -125,7 +204,13 @@ export function proposeOutputStructure(packet: FoundryProductionPacket): OutputS
 
 function renderScrollEntries(entries: ScrollEntry[]): string {
   return entries
-    .map((entry, index) => `${index + 1}. ${entry.at} | ${entry.station} | ${entry.action} | ${entry.summary}`)
+    .map((entry, index) => {
+      const previousEntry = index > 0 ? entries[index - 1] : null;
+      const latencySuffix = previousEntry
+        ? ` | +${new Date(entry.at).getTime() - new Date(previousEntry.at).getTime()}ms`
+        : " | origin";
+      return `${index + 1}. ${entry.at} | ${entry.station} | ${entry.action}${latencySuffix} | ${entry.summary}`;
+    })
     .join("\n");
 }
 
@@ -142,6 +227,11 @@ export function renderScribeReport(packet: FoundryProductionPacket): string {
     `Consequence Tier: ${packet.consequenceTier}`,
     `Carmilla Output Root: ${plan.rootPath}`,
     "",
+    "## Custody Notes",
+    "",
+    "- Scroll timestamps are advanced with a monotonic custody clock so packet movement remains causally ordered.",
+    "- The scroll is a movement witness, not a substitute for critique, audit, or verification artifacts.",
+    "",
     "## Scroll Entries",
     "",
     renderScrollEntries(packet.scroll.entries),
@@ -153,14 +243,26 @@ function renderVerificationReport(packet: FoundryProductionPacket): string {
   const status = packet.executionMode === "verification-failure" ? "FAIL" : "PASS";
   const outcomeLine =
     packet.executionMode === "verification-failure"
-      ? "- Simulated verification failure triggered by governed failure-case packet."
-      : "- Packet structure validated.";
+      ? "- Controlled verification failure was injected by Citadel governance to test restoration and attestation behavior."
+      : "- Packet structure and governed boundary semantics validated.";
+  const releaseDisposition =
+    packet.executionMode === "verification-failure"
+      ? "Blocked from release-facing disposition pending restoration."
+      : "Eligible to advance into bounded implementation, subject to critique and later execution evidence.";
 
   return [
     "# Verification Report",
     "",
     `Mission: ${packet.missionId}`,
+    `Packet: ${packet.packetId}`,
     `Status: ${status}`,
+    "",
+    "## Scope",
+    "",
+    "- Packet integrity at Foundry ingress",
+    "- Required profession preservation",
+    "- Boundary and scroll continuity",
+    "- Carmilla output authority boundaries",
     "",
     "## Checks",
     "",
@@ -169,27 +271,40 @@ function renderVerificationReport(packet: FoundryProductionPacket): string {
     "- Output structure canonization remains within Carmilla authority boundaries.",
     "- Scroll continuity present on the returning packet.",
     "",
+    "## Disposition",
+    "",
+    releaseDisposition,
+    "",
   ].join("\n");
 }
 
 function renderCritiqueReport(packet: FoundryProductionPacket): string {
   const finding =
     packet.executionMode === "verification-failure"
-      ? "Verification failed as expected in the controlled failure case; release-facing trust must not be granted."
-      : "Verification claims PASS, but production trust remains contingent on independent critique and later implementation evidence.";
+      ? "verification-report.md correctly records a failed gate, but that report alone is not enough to prove safe continuation."
+      : "verification-report.md claims PASS, but production trust still depends on implementation evidence that does not yet exist.";
   const recommendation =
     packet.executionMode === "verification-failure"
-      ? "Do not proceed to trusted release. Preserve evidence and route the packet into restoration handling."
-      : "Proceed with bounded production while preserving review and contradiction visibility.";
+      ? "Recommendation: REVISE. Do not proceed to trusted release. Preserve the failed verification artifact and route the packet into restoration handling."
+      : "Recommendation: PROCEED WITH CAUTION. Continue only as bounded production while preserving contradiction visibility and later execution review.";
+  const concern =
+    packet.executionMode === "verification-failure"
+      ? "The release path must remain frozen because the controlled failure demonstrates that verification can fail before any operator-facing trust claim is made."
+      : "Current trust is still governance-shaped rather than implementation-proven; no runtime output should be misrepresented as independently verified delivery.";
 
   return [
     "# Critique Report",
     "",
     `Mission: ${packet.missionId}`,
+    `Packet: ${packet.packetId}`,
     "",
     "## Finding",
     "",
     finding,
+    "",
+    "## Challenge",
+    "",
+    concern,
     "",
     "## Recommendation",
     "",
@@ -203,13 +318,14 @@ function renderCritiqueReport(packet: FoundryProductionPacket): string {
 function renderAuditReport(packet: FoundryProductionPacket): string {
   const finding =
     packet.executionMode === "verification-failure"
-      ? "The controlled failure case preserved verification failure, critique objection, and restoration declaration as distinct artifacts."
+      ? "The controlled failure case preserved verification failure, critique objection, restoration declaration, and a hash-bound artifact set as distinct custody surfaces."
       : "The current prototype demonstrates artifact separation and movement lineage, but remains dependent on adapter-simulated governance behavior.";
 
   return [
     "# Audit Report",
     "",
     `Mission: ${packet.missionId}`,
+    `Packet: ${packet.packetId}`,
     "",
     "## Audit Scope",
     "",
@@ -217,10 +333,17 @@ function renderAuditReport(packet: FoundryProductionPacket): string {
     "- Critique artifact presence",
     "- Scroll continuity",
     "- Output custody layout",
+    "- Hash manifest availability for independent verification",
     "",
     "## Audit Finding",
     "",
     finding,
+    "",
+    "## Residual Limitations",
+    "",
+    "- Governance classification still comes from the local Citadel adapter rather than a live Citadel runtime.",
+    "- The output manifest is hash-verifiable, but not signature-backed.",
+    "- Scroll timestamps are simulated monotonic custody markers rather than distributed system clocks.",
     "",
     "Signed: Auditor (prototype audit component)",
     "",
@@ -249,6 +372,12 @@ function renderFailurePath(packet: FoundryProductionPacket): string {
     "3. Append critique and audit notes.",
     "4. Route the packet into restoration / escalation handling.",
     "",
+    "## Escalation Route",
+    "",
+    "- Foundry Rook preserves the blocked packet and its manifest.",
+    "- Critique and audit remain append-only companion artifacts.",
+    "- Citadel receives the failed evidence set on the next governed return cycle.",
+    "",
   ].join("\n");
 }
 
@@ -265,6 +394,8 @@ function renderMissionFile(packet: FoundryProductionPacket): string {
 }
 
 function renderProductionOrderFile(packet: FoundryProductionPacket): string {
+  const plan = proposeOutputStructure(packet);
+
   return [
     "# Production Order",
     "",
@@ -272,6 +403,11 @@ function renderProductionOrderFile(packet: FoundryProductionPacket): string {
     `Mission: ${packet.missionId}`,
     `Objective: ${packet.objective}`,
     `Summary: ${packet.summary}`,
+    `Template: ${packet.templateId}`,
+    `Consequence Tier: ${packet.consequenceTier}`,
+    `Output Root: ${plan.rootPath}`,
+    `Required Professions: ${packet.requiredProfessionIds.join(", ")}`,
+    `Optional Professions: ${packet.optionalProfessionIds.join(", ") || "none"}`,
     "",
   ].join("\n");
 }

@@ -29,6 +29,7 @@ export interface AuditScroll {
   packetId: string;
   missionId: string | null;
   entries: ScrollEntry[];
+  clockCursorMs: number;
 }
 
 export function createAuditScroll(packetId: string, missionId: string | null = null): AuditScroll {
@@ -39,7 +40,19 @@ export function createAuditScroll(packetId: string, missionId: string | null = n
     packetId,
     missionId,
     entries: [],
+    clockCursorMs: Date.now(),
   };
+}
+
+function nextScrollTimestamp(scroll: AuditScroll, action: ScrollAction): RuntimeTimestamp {
+  const minimumAdvanceMs =
+    action === "packet-reviewed" ? 650
+    : action === "packet-repackaged" ? 420
+    : action === "packet-returned" ? 260
+    : 180;
+  const now = Date.now();
+  scroll.clockCursorMs = Math.max(scroll.clockCursorMs + minimumAdvanceMs, now);
+  return toTimestamp(new Date(scroll.clockCursorMs));
 }
 
 export function recordScrollEntry(
@@ -51,7 +64,7 @@ export function recordScrollEntry(
   assertNonEmpty(summary, "scrollEntry.summary");
 
   scroll.entries.push({
-    at: toTimestamp(),
+    at: nextScrollTimestamp(scroll, action),
     station,
     action,
     summary,
