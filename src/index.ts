@@ -5,6 +5,7 @@ export * from "./runtime/boundary/types.js";
 export * from "./runtime/boundary/packets.js";
 export * from "./runtime/boundary/scribe.js";
 export * from "./runtime/boundary/isolde.js";
+export * from "./runtime/boundary/citadel-adapter.js";
 export * from "./runtime/boundary/citadel-stub.js";
 export * from "./runtime/boundary/foundry-rook.js";
 export * from "./runtime/delegation/types.js";

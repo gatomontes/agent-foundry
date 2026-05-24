@@ -150,15 +150,21 @@ export function renderScribeReport(packet: FoundryProductionPacket): string {
 }
 
 function renderVerificationReport(packet: FoundryProductionPacket): string {
+  const status = packet.executionMode === "verification-failure" ? "FAIL" : "PASS";
+  const outcomeLine =
+    packet.executionMode === "verification-failure"
+      ? "- Simulated verification failure triggered by governed failure-case packet."
+      : "- Packet structure validated.";
+
   return [
     "# Verification Report",
     "",
     `Mission: ${packet.missionId}`,
-    "Status: PASS",
+    `Status: ${status}`,
     "",
     "## Checks",
     "",
-    "- Packet structure validated.",
+    outcomeLine,
     "- Required professions preserved.",
     "- Output structure canonization remains within Carmilla authority boundaries.",
     "- Scroll continuity present on the returning packet.",
@@ -167,6 +173,15 @@ function renderVerificationReport(packet: FoundryProductionPacket): string {
 }
 
 function renderCritiqueReport(packet: FoundryProductionPacket): string {
+  const finding =
+    packet.executionMode === "verification-failure"
+      ? "Verification failed as expected in the controlled failure case; release-facing trust must not be granted."
+      : "Verification claims PASS, but production trust remains contingent on independent critique and later implementation evidence.";
+  const recommendation =
+    packet.executionMode === "verification-failure"
+      ? "Do not proceed to trusted release. Preserve evidence and route the packet into restoration handling."
+      : "Proceed with bounded production while preserving review and contradiction visibility.";
+
   return [
     "# Critique Report",
     "",
@@ -174,11 +189,11 @@ function renderCritiqueReport(packet: FoundryProductionPacket): string {
     "",
     "## Finding",
     "",
-    "Verification claims PASS, but production trust remains contingent on independent critique and later implementation evidence.",
+    finding,
     "",
     "## Recommendation",
     "",
-    "Proceed with bounded production while preserving review and contradiction visibility.",
+    recommendation,
     "",
     "Signed: Blackquill (prototype critique component)",
     "",
@@ -186,6 +201,11 @@ function renderCritiqueReport(packet: FoundryProductionPacket): string {
 }
 
 function renderAuditReport(packet: FoundryProductionPacket): string {
+  const finding =
+    packet.executionMode === "verification-failure"
+      ? "The controlled failure case preserved verification failure, critique objection, and restoration declaration as distinct artifacts."
+      : "The current prototype demonstrates artifact separation and movement lineage, but remains dependent on adapter-simulated governance behavior.";
+
   return [
     "# Audit Report",
     "",
@@ -200,7 +220,7 @@ function renderAuditReport(packet: FoundryProductionPacket): string {
     "",
     "## Audit Finding",
     "",
-    "The current prototype demonstrates artifact separation and movement lineage, but remains dependent on stubbed governance behavior.",
+    finding,
     "",
     "Signed: Auditor (prototype audit component)",
     "",
@@ -208,6 +228,11 @@ function renderAuditReport(packet: FoundryProductionPacket): string {
 }
 
 function renderFailurePath(packet: FoundryProductionPacket): string {
+  const declaredMode =
+    packet.executionMode === "verification-failure"
+      ? `Controlled failure active: ${packet.failureReason ?? "No reason supplied."}`
+      : "No active failure injection. This path remains the declared restoration route if verification fails later.";
+
   return [
     "# Failure Path",
     "",
@@ -215,7 +240,7 @@ function renderFailurePath(packet: FoundryProductionPacket): string {
     "",
     "## Declared Failure Mode",
     "",
-    "If verification fails, production should halt before trusted disposition, preserve current artifacts, emit a critique note, and escalate toward restoration review.",
+    declaredMode,
     "",
     "## Restoration Semantics",
     "",

@@ -8,6 +8,7 @@
     "build": "tsc -p tsconfig.json",
     "check": "tsc -p tsconfig.json --noEmit",
     "example": "npm.cmd run build && node dist/runtime/examples/run-example.js",
+    "failure-example": "npm.cmd run build && node dist/runtime/examples/run-failure-example.js",
     "foundry": "npm.cmd run build && node dist/runtime/examples/run-foundry.js"
   },
   "devDependencies": {

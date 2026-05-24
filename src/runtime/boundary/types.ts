@@ -23,6 +23,8 @@ export interface FoundryProductionPacket {
   summary: string;
   consequenceTier: ConsequenceTier;
   templateId: FlowTemplateId;
+  executionMode?: "normal" | "verification-failure";
+  failureReason?: string;
   requiredProfessionIds: string[];
   optionalProfessionIds: string[];
   governanceNotes: string[];

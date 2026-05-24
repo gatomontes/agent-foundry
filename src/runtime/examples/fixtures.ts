@@ -63,6 +63,15 @@ export function exampleOperatorIntent(): OperatorIntent {
   };
 }
 
+export function exampleFailureIntent(): OperatorIntent {
+  return {
+    requestId: "req-failure-001",
+    operatorId: "operator-001",
+    objective: "Run a failure test for a payroll SaaS homepage output pipeline.",
+    notes: ["Simulate verification failure and preserve restoration evidence."],
+  };
+}
+
 export function exampleClarificationIntent(): OperatorIntent {
   return {
     requestId: "req-clarify-001",
