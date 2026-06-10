@@ -71,12 +71,16 @@ async function main(): Promise<void> {
         }
 
         output.write(`Isolde: Carmilla materialized output root -> ${materialized.rootPath}\n`);
+        output.write(`Isolde: Carmilla materialized run path -> ${materialized.runPath}\n`);
         output.write(`Isolde: Carmilla created directories -> ${materialized.directoriesCreated.join(", ")}\n`);
         output.write(`Isolde: Carmilla created files -> ${materialized.filesCreated.join(", ")}\n`);
         output.write(`Isolde: Critique report written to -> ${materialized.critiqueReportPath ?? "not-applicable"}\n`);
         output.write(`Isolde: Audit report written to -> ${materialized.auditReportPath ?? "not-applicable"}\n`);
         output.write(`Isolde: Failure path written to -> ${materialized.failurePathReportPath}\n`);
+        output.write(`Isolde: Mission attestation written to -> ${materialized.attestationPath ?? "not-applicable"}\n`);
+        output.write(`Isolde: Execution evidence written to -> ${materialized.executionEvidencePath ?? "not-applicable"}\n`);
         output.write(`Isolde: Hash manifest written to -> ${materialized.hashManifestPath}\n`);
+        output.write(`Isolde: Manifest signature written to -> ${materialized.signaturePath ?? "not-configured"}\n`);
         output.write(`Isolde: Scribe report written to -> ${materialized.scribeReportPath}\n`);
 
         return;
@@ -94,6 +98,15 @@ async function main(): Promise<void> {
 
       const surfaced = isolde.surfacePrompt(intake.operatorId, outcome.promptRequest);
       output.write("Isolde: Citadel needs clarification before production can begin.\n");
+      output.write(`Isolde: Blocking issues -> ${surfaced.blockingIssues.join(" | ") || "none"}\n`);
+      output.write(`Isolde: Required actions -> ${surfaced.requiredActions.join(" | ") || "none"}\n`);
+      output.write(`Isolde: Recommended actions -> ${surfaced.recommendedActions.join(" | ") || "none"}\n`);
+      output.write(`Isolde: Blocked actions -> ${surfaced.blockedActions.join(" | ") || "none"}\n`);
+      output.write(
+        `Isolde: Human decisions required -> ${surfaced.humanDecisionsRequired.join(" | ") || "none"}\n`,
+      );
+      output.write(`Isolde: Unresolved questions -> ${surfaced.unresolvedQuestions.join(" | ") || "none"}\n`);
+      output.write(`Isolde: Archival reference -> ${surfaced.archivalReference ?? "unresolved"}\n`);
 
       const answers: string[] = [];
 

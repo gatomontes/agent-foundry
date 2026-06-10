@@ -1,13 +1,15 @@
-import { createHash } from "node:crypto";
+import { createHash, createHmac } from "node:crypto";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import type { FoundryProductionPacket } from "../boundary/types.js";
 import type { ScrollEntry } from "../boundary/scribe.js";
+import { getFoundryEnv } from "../config/env.js";
 import { requireProfessions } from "../professions/registry.js";
 import type { ProfessionManifest } from "../professions/types.js";
 import type { OutputStructureProposal } from "./types.js";
 import type { OutputMaterializationResult } from "./types.js";
+import { toTimestamp, type ManifestSignature } from "../shared/types.js";
 
 const STOP_WORDS = new Set([
   "a",
@@ -59,6 +61,12 @@ function extractProjectSlug(packet: FoundryProductionPacket): string {
     "payroll",
     "employee",
     "saas",
+    "creative",
+    "title",
+    "song",
+    "lyric",
+    "copy",
+    "naming",
     "homepage",
     "runtime",
     "shell",
@@ -101,6 +109,16 @@ function projectSlugFor(packet: FoundryProductionPacket): string {
   return projectSlug.length > 0 ? projectSlug : slugify(packet.missionId);
 }
 
+function safeRunSegment(value: string): string {
+  return value.replace(/[:.]/g, "-");
+}
+
+function buildRunPath(rootPath: string, packet: FoundryProductionPacket): string {
+  const timestampSegment = safeRunSegment(packet.createdAt);
+  const packetSegment = slugify(packet.packetId).slice(0, 24) || "packet";
+  return `${rootPath}/runs/${timestampSegment}-${packetSegment}`;
+}
+
 function flatArtifactPath(rootPath: string, prefix: string, fileName: string): string {
   const [, stageName = ""] = prefix.split("-", 2);
   const normalizedFileName =
@@ -113,21 +131,24 @@ function flatArtifactPath(rootPath: string, prefix: string, fileName: string): s
 export function proposeOutputStructure(packet: FoundryProductionPacket): OutputStructureProposal {
   const projectSlug = projectSlugFor(packet);
   const rootPath = `output/${projectSlug}`;
+  const runPath = buildRunPath(rootPath, packet);
 
   if (packet.templateId === "verification-heavy") {
     return {
       projectSlug,
       rootPath,
-      directories: [rootPath],
+      directories: [rootPath, `${rootPath}/runs`, runPath],
       canonicalFiles: [
-        flatArtifactPath(rootPath, "00-intake", "mission.md"),
-        flatArtifactPath(rootPath, "01-orders", "production-order.md"),
-        flatArtifactPath(rootPath, "03-verification", "verification-report.md"),
-        flatArtifactPath(rootPath, "04-critique", "critique-report.md"),
-        flatArtifactPath(rootPath, "05-audit", "audit-report.md"),
-        flatArtifactPath(rootPath, "06-restoration", "failure-path.md"),
-        flatArtifactPath(rootPath, "08-scribe", "output-manifest.sha256"),
-        flatArtifactPath(rootPath, "08-scribe", "scribe-report.md"),
+        flatArtifactPath(runPath, "00-intake", "mission.md"),
+        flatArtifactPath(runPath, "01-orders", "production-order.md"),
+        flatArtifactPath(runPath, "03-verification", "verification-report.md"),
+        flatArtifactPath(runPath, "04-critique", "critique-report.md"),
+        flatArtifactPath(runPath, "05-audit", "audit-report.md"),
+        flatArtifactPath(runPath, "06-restoration", "failure-path.md"),
+        flatArtifactPath(runPath, "07-attestation", "mission-attestation.json"),
+        flatArtifactPath(runPath, "07-attestation", "execution-evidence.md"),
+        flatArtifactPath(runPath, "08-scribe", "output-manifest.sha256"),
+        flatArtifactPath(runPath, "08-scribe", "scribe-report.md"),
       ],
       rationale: [
         "Verification-heavy work still requires strong separation between execution, verification, critique, and audit custody.",
@@ -141,15 +162,15 @@ export function proposeOutputStructure(packet: FoundryProductionPacket): OutputS
     return {
       projectSlug,
       rootPath,
-      directories: [rootPath],
+      directories: [rootPath, `${rootPath}/runs`, runPath],
       canonicalFiles: [
-        flatArtifactPath(rootPath, "00-intake", "mission.md"),
-        flatArtifactPath(rootPath, "01-brief", "prototype-brief.md"),
-        flatArtifactPath(rootPath, "03-verification", "checks.md"),
-        flatArtifactPath(rootPath, "04-critique", "critique-report.md"),
-        flatArtifactPath(rootPath, "05-failure", "failure-path.md"),
-        flatArtifactPath(rootPath, "06-scribe", "output-manifest.sha256"),
-        flatArtifactPath(rootPath, "06-scribe", "scribe-report.md"),
+        flatArtifactPath(runPath, "00-intake", "mission.md"),
+        flatArtifactPath(runPath, "01-brief", "prototype-brief.md"),
+        flatArtifactPath(runPath, "03-verification", "checks.md"),
+        flatArtifactPath(runPath, "04-critique", "critique-report.md"),
+        flatArtifactPath(runPath, "05-failure", "failure-path.md"),
+        flatArtifactPath(runPath, "06-scribe", "output-manifest.sha256"),
+        flatArtifactPath(runPath, "06-scribe", "scribe-report.md"),
       ],
       rationale: [
         "Rapid prototype work favors low-friction structure while still preserving mission, prototype, and verification custody.",
@@ -160,21 +181,50 @@ export function proposeOutputStructure(packet: FoundryProductionPacket): OutputS
     };
   }
 
+  if (packet.templateId === "creative-development") {
+    return {
+      projectSlug,
+      rootPath,
+      directories: [rootPath, `${rootPath}/runs`, runPath],
+      canonicalFiles: [
+        flatArtifactPath(runPath, "00-intake", "mission.md"),
+        flatArtifactPath(runPath, "01-brief", "creative-brief.md"),
+        flatArtifactPath(runPath, "02-generation", "option-set.md"),
+        flatArtifactPath(runPath, "03-verification", "fit-check.md"),
+        flatArtifactPath(runPath, "04-critique", "critique-report.md"),
+        flatArtifactPath(runPath, "05-release", "operator-summary.md"),
+        flatArtifactPath(runPath, "06-restoration", "failure-path.md"),
+        flatArtifactPath(runPath, "07-attestation", "mission-attestation.json"),
+        flatArtifactPath(runPath, "07-attestation", "execution-evidence.md"),
+        flatArtifactPath(runPath, "08-scribe", "output-manifest.sha256"),
+        flatArtifactPath(runPath, "08-scribe", "scribe-report.md"),
+      ],
+      rationale: [
+        "Creative-development work benefits from explicit separation between framing, generation, fit verification, and creative review.",
+        "The artifact set should make option quality and shortlist logic inspectable instead of flattening creative work into generic build semantics.",
+        "Flattened filenames keep the output root easy to scan while retaining stage identity.",
+      ],
+      decidedBy: "carmilla",
+    };
+  }
+
   return {
     projectSlug,
     rootPath,
-    directories: [rootPath],
+    directories: [rootPath, `${rootPath}/runs`, runPath],
     canonicalFiles: [
-      flatArtifactPath(rootPath, "00-intake", "mission.md"),
-      flatArtifactPath(rootPath, "01-orders", "production-order.md"),
-      flatArtifactPath(rootPath, "02-architecture", "architecture-brief.md"),
-      flatArtifactPath(rootPath, "04-verification", "verification-report.md"),
-      flatArtifactPath(rootPath, "05-critique", "critique-report.md"),
-      flatArtifactPath(rootPath, "06-audit", "audit-report.md"),
-      flatArtifactPath(rootPath, "07-release", "operator-summary.md"),
-      flatArtifactPath(rootPath, "08-restoration", "failure-path.md"),
-      flatArtifactPath(rootPath, "09-scribe", "output-manifest.sha256"),
-      flatArtifactPath(rootPath, "09-scribe", "scribe-report.md"),
+      flatArtifactPath(runPath, "00-intake", "mission.md"),
+      flatArtifactPath(runPath, "01-orders", "production-order.md"),
+      flatArtifactPath(runPath, "02-architecture", "architecture-brief.md"),
+      flatArtifactPath(runPath, "04-verification", "verification-report.md"),
+      flatArtifactPath(runPath, "05-critique", "critique-report.md"),
+      flatArtifactPath(runPath, "06-audit", "audit-report.md"),
+      flatArtifactPath(runPath, "07-release", "operator-summary.md"),
+      flatArtifactPath(runPath, "08-restoration", "failure-path.md"),
+      flatArtifactPath(runPath, "09-attestation", "mission-attestation.json"),
+      flatArtifactPath(runPath, "09-attestation", "execution-evidence.md"),
+      flatArtifactPath(runPath, "10-scribe", "output-manifest.sha256"),
+      flatArtifactPath(runPath, "10-scribe", "scribe-report.md"),
     ],
     rationale: [
       "SaaS build work benefits from explicit separation between architecture, implementation, verification, and release-facing output.",
@@ -257,6 +307,33 @@ function renderTopologyEdges(packet: FoundryProductionPacket): string {
     : "- topology edges unresolved";
 }
 
+function manifestSecret(): string | null {
+  return getFoundryEnv("FOUNDRY_MANIFEST_SECRET");
+}
+
+function manifestKeyId(secret: string): string {
+  return createHash("sha256").update(secret, "utf8").digest("hex").slice(0, 12);
+}
+
+function signManifest(packet: FoundryProductionPacket, manifest: string): ManifestSignature | null {
+  if (packet.productionProfile.manifestStrategy !== "hmac-sha256") {
+    return null;
+  }
+
+  const secret = manifestSecret();
+
+  if (!secret) {
+    return null;
+  }
+
+  return {
+    algorithm: "hmac-sha256",
+    keyId: manifestKeyId(secret),
+    signature: createHmac("sha256", secret).update(manifest, "utf8").digest("hex"),
+    signedAt: toTimestamp(),
+  };
+}
+
 function nextActiveNodeLine(packet: FoundryProductionPacket): string {
   const nodes = packet.topology?.nodes ?? [];
   const nextNode = nodes[1] ?? nodes[0] ?? null;
@@ -280,12 +357,17 @@ export function renderScribeReport(packet: FoundryProductionPacket): string {
     `Objective: ${packet.objective}`,
     `Template: ${packet.templateId}`,
     `Consequence Tier: ${packet.consequenceTier}`,
+    `Production Mode: ${packet.productionProfile.mode}`,
+    `Evidence Level: ${packet.productionProfile.evidenceLevel}`,
+    `Manifest Strategy: ${packet.productionProfile.manifestStrategy}`,
     `Carmilla Output Root: ${plan.rootPath}`,
+    `Carmilla Run Path: ${plan.directories[plan.directories.length - 1]}`,
     "",
     "## Custody Notes",
     "",
     "- Scroll timestamps are advanced with a monotonic custody clock so packet movement remains causally ordered.",
     "- The scroll is a movement witness, not a substitute for critique, audit, or verification artifacts.",
+    `- Manifest signing ${manifestSecret() ? "is configured for this runtime." : "is available but not configured in this runtime."}`,
     "",
     "## Scroll Entries",
     "",
@@ -299,11 +381,15 @@ function renderVerificationReport(packet: FoundryProductionPacket): string {
   const outcomeLine =
     packet.executionMode === "verification-failure"
       ? "- Controlled verification failure was injected by Citadel governance to test restoration and attestation behavior."
-      : "- Packet structure and governed boundary semantics validated.";
+      : packet.executionEvidence
+        ? "- Packet structure, governed boundary semantics, and runtime initiation evidence were validated."
+        : "- Packet structure and governed boundary semantics validated.";
   const releaseDisposition =
     packet.executionMode === "verification-failure"
       ? "Blocked from release-facing disposition pending restoration."
-      : "Eligible to advance into bounded implementation, subject to critique and later execution evidence.";
+      : packet.executionEvidence
+        ? "Eligible to advance into bounded implementation with runtime attestation present, subject to critique, audit, and task-specific execution review."
+        : "Eligible to advance into bounded implementation, subject to critique and later execution evidence.";
 
   return [
     "# Verification Report",
@@ -318,6 +404,7 @@ function renderVerificationReport(packet: FoundryProductionPacket): string {
     "- Required profession preservation",
     "- Boundary and scroll continuity",
     "- Carmilla output authority boundaries",
+    "- Runtime initiation evidence presence",
     "",
     "## Checks",
     "",
@@ -325,6 +412,9 @@ function renderVerificationReport(packet: FoundryProductionPacket): string {
     "- Required professions preserved.",
     "- Output structure canonization remains within Carmilla authority boundaries.",
     "- Scroll continuity present on the returning packet.",
+    packet.executionEvidence
+      ? "- MissionRuntime emitted execution evidence for this initiated production run."
+      : "- No runtime initiation evidence was attached to this packet at materialization time.",
     "",
     "## Disposition",
     "",
@@ -337,15 +427,21 @@ function renderCritiqueReport(packet: FoundryProductionPacket): string {
   const finding =
     packet.executionMode === "verification-failure"
       ? "verification-report.md correctly records a failed gate, but that report alone is not enough to prove safe continuation."
-      : "verification-report.md claims PASS, but production trust still depends on implementation evidence that does not yet exist.";
+      : packet.executionEvidence
+        ? "verification-report.md claims PASS and includes runtime initiation evidence, but mission trust still depends on the downstream work itself being correct."
+        : "verification-report.md claims PASS, but production trust still depends on implementation evidence that does not yet exist.";
   const recommendation =
     packet.executionMode === "verification-failure"
       ? "Recommendation: REVISE. Do not proceed to trusted release. Preserve the failed verification artifact and route the packet into restoration handling."
-      : "Recommendation: PROCEED WITH CAUTION. Continue only as bounded production while preserving contradiction visibility and later execution review.";
+      : packet.executionEvidence
+        ? "Recommendation: PROCEED WITH DISCIPLINE. Runtime attestation is present, but release trust still requires downstream implementation review and verification."
+        : "Recommendation: PROCEED WITH CAUTION. Continue only as bounded production while preserving contradiction visibility and later execution review.";
   const concern =
     packet.executionMode === "verification-failure"
       ? "The release path must remain frozen because the controlled failure demonstrates that verification can fail before any operator-facing trust claim is made."
-      : "Current trust is still governance-shaped rather than implementation-proven; no runtime output should be misrepresented as independently verified delivery.";
+      : packet.executionEvidence
+        ? "Runtime initiation is now attested, but attested initiation is still not the same as independently verified business correctness."
+        : "Current trust is still governance-shaped rather than implementation-proven; no runtime output should be misrepresented as independently verified delivery.";
 
   return [
     "# Critique Report",
@@ -374,7 +470,9 @@ function renderAuditReport(packet: FoundryProductionPacket): string {
   const finding =
     packet.executionMode === "verification-failure"
       ? "The controlled failure case preserved verification failure, critique objection, restoration declaration, and a hash-bound artifact set as distinct custody surfaces."
-      : "The current prototype demonstrates artifact separation and movement lineage, but remains dependent on adapter-simulated governance behavior.";
+      : packet.executionEvidence
+        ? "The runtime preserved artifact separation, movement lineage, and mission initiation evidence for this production-style run."
+        : "The current prototype demonstrates artifact separation and movement lineage, but remains dependent on adapter-simulated governance behavior.";
 
   return [
     "# Audit Report",
@@ -389,6 +487,7 @@ function renderAuditReport(packet: FoundryProductionPacket): string {
     "- Scroll continuity",
     "- Output custody layout",
     "- Hash manifest availability for independent verification",
+    "- Runtime attestation presence",
     "",
     "## Audit Finding",
     "",
@@ -397,7 +496,9 @@ function renderAuditReport(packet: FoundryProductionPacket): string {
     "## Residual Limitations",
     "",
     "- Governance classification still comes from the local Citadel adapter rather than a live Citadel runtime.",
-    "- The output manifest is hash-verifiable, but not signature-backed.",
+    manifestSecret()
+      ? "- The output manifest can be signature-backed with the configured local HMAC secret, but this is still host-local trust rather than external notarization."
+      : "- The output manifest remains hash-verifiable unless FOUNDRY_MANIFEST_SECRET is configured for signature generation.",
     "- Scroll timestamps are simulated monotonic custody markers rather than distributed system clocks.",
     "",
     "Signed: Auditor (prototype audit component)",
@@ -622,11 +723,129 @@ function renderPrototypeChecks(packet: FoundryProductionPacket): string {
   ].join("\n");
 }
 
+function renderCreativeBrief(packet: FoundryProductionPacket): string {
+  return [
+    "# Creative Brief",
+    "",
+    `Mission: ${packet.missionId}`,
+    `Objective: ${packet.objective}`,
+    "",
+    "## Creative Intent",
+    "",
+    "This run optimizes for idea quality, lane clarity, and shortlist-ready creative judgment rather than software implementation semantics.",
+    "",
+    "## Topology Nodes",
+    "",
+    renderTopologyNodes(packet),
+    "",
+    "## Flow Edges",
+    "",
+    renderTopologyEdges(packet),
+    "",
+  ].join("\n");
+}
+
+function renderCreativeOptionSet(packet: FoundryProductionPacket): string {
+  return [
+    "# Option Set",
+    "",
+    `Mission: ${packet.missionId}`,
+    `Objective: ${packet.objective}`,
+    "",
+    "## Governed Proposal",
+    "",
+    `Title: ${packet.proposal.title}`,
+    `Summary: ${packet.proposal.summary}`,
+    "",
+    renderProposalItems(packet),
+    "",
+    "## Creative Handling Notes",
+    "",
+    renderBulletList([
+      "Preserve distinct lanes when they materially improve option quality.",
+      "Favor shortlist-ready outputs over decorative quantity.",
+      "Keep anti-cliche and fit pressure visible in the downstream review surface.",
+    ]),
+    "",
+  ].join("\n");
+}
+
+function renderCreativeFitCheck(packet: FoundryProductionPacket): string {
+  return [
+    "# Fit Check",
+    "",
+    `Mission: ${packet.missionId}`,
+    "",
+    "## Checks",
+    "",
+    "- Creative framing surface present.",
+    "- Generation surface preserved as an inspectable option set.",
+    "- Verification remains responsible for fit, lane integrity, and output usability.",
+    `- Next active node declared: ${nextActiveNodeLine(packet)}`,
+    "",
+  ].join("\n");
+}
+
+function renderExecutionEvidence(packet: FoundryProductionPacket): string {
+  const evidence = packet.executionEvidence;
+
+  return [
+    "# Execution Evidence",
+    "",
+    `Mission: ${packet.missionId}`,
+    `Packet: ${packet.packetId}`,
+    `Production mode: ${packet.productionProfile.mode}`,
+    `Evidence level: ${packet.productionProfile.evidenceLevel}`,
+    "",
+    "## Runtime Evidence",
+    "",
+    evidence
+      ? renderBulletList([
+          `Runtime session: ${evidence.runtimeSessionId}`,
+          `Initiated at: ${evidence.initiatedAt}`,
+          `Initiated by: ${evidence.initiatedBy}`,
+          `Mission state at attestation: ${evidence.missionState}`,
+          `Topology assigned: ${evidence.topologyAssigned ? "yes" : "no"}`,
+          `Active delegations: ${String(evidence.activeDelegationCount)}`,
+        ])
+      : "- Production was not initiated through MissionRuntime, so only governance-shaped evidence is present.",
+    "",
+    "## Evidence References",
+    "",
+    evidence ? renderBulletList(evidence.evidenceRefs) : "- none",
+    "",
+  ].join("\n");
+}
+
+function renderMissionAttestation(packet: FoundryProductionPacket): string {
+  return JSON.stringify(
+    {
+      missionId: packet.missionId,
+      packetId: packet.packetId,
+      objective: packet.objective,
+      createdAt: packet.createdAt,
+      productionProfile: packet.productionProfile,
+      executionEvidence: packet.executionEvidence ?? null,
+      topologyNodeCount: packet.topology?.nodes.length ?? 0,
+      topologyEdgeCount: packet.topology?.edges.length ?? 0,
+      requiredProfessionIds: packet.requiredProfessionIds,
+      optionalProfessionIds: packet.optionalProfessionIds,
+      governanceNotes: packet.governanceNotes,
+      scrollId: packet.scroll.scrollId,
+    },
+    null,
+    2,
+  );
+}
+
 function contentForFile(filePath: string, packet: FoundryProductionPacket): string {
   if (filePath.endsWith("mission.md")) return renderMissionFile(packet);
   if (filePath.endsWith("production-order.md")) return renderProductionOrderFile(packet);
   if (filePath.endsWith("verification-report.md")) return renderVerificationReport(packet);
   if (filePath.endsWith("checks.md")) return renderPrototypeChecks(packet);
+  if (filePath.endsWith("creative-brief.md")) return renderCreativeBrief(packet);
+  if (filePath.endsWith("option-set.md")) return renderCreativeOptionSet(packet);
+  if (filePath.endsWith("fit-check.md")) return renderCreativeFitCheck(packet);
   if (filePath.endsWith("critique-report.md")) return renderCritiqueReport(packet);
   if (filePath.endsWith("audit-report.md")) return renderAuditReport(packet);
   if (filePath.endsWith("failure-path.md")) return renderFailurePath(packet);
@@ -634,6 +853,8 @@ function contentForFile(filePath: string, packet: FoundryProductionPacket): stri
   if (filePath.endsWith("architecture-brief.md")) return renderArchitectureBrief(packet);
   if (filePath.endsWith("operator-summary.md")) return renderOperatorSummary(packet);
   if (filePath.endsWith("prototype-brief.md")) return renderPrototypeBrief(packet);
+  if (filePath.endsWith("mission-attestation.json")) return renderMissionAttestation(packet);
+  if (filePath.endsWith("execution-evidence.md")) return renderExecutionEvidence(packet);
 
   return `# ${path.basename(filePath)}\n\nGenerated under Carmilla output canonization for mission ${packet.missionId}.\n`;
 }
@@ -655,8 +876,7 @@ export async function materializeOutputStructure(
   const plan = proposeOutputStructure(packet);
   const directoriesCreated: string[] = [];
   const filesCreated: string[] = [];
-
-  await rm(plan.rootPath, { recursive: true, force: true });
+  const runPath = plan.directories[plan.directories.length - 1] ?? plan.rootPath;
 
   for (const directory of plan.directories) {
     await mkdir(directory, { recursive: true });
@@ -676,7 +896,14 @@ export async function materializeOutputStructure(
   const hashManifestPath =
     plan.canonicalFiles.find((filePath) => filePath.endsWith("output-manifest.sha256")) ??
     path.join(plan.rootPath, "output-manifest.sha256");
+  const attestationPath =
+    plan.canonicalFiles.find((filePath) => filePath.endsWith("mission-attestation.json")) ?? null;
+  const executionEvidencePath =
+    plan.canonicalFiles.find((filePath) => filePath.endsWith("execution-evidence.md")) ?? null;
   const fileContents = new Map<string, string>();
+
+  await rm(runPath, { recursive: true, force: true });
+  await mkdir(runPath, { recursive: true });
 
   for (const filePath of plan.canonicalFiles) {
     if (filePath === hashManifestPath) {
@@ -692,9 +919,40 @@ export async function materializeOutputStructure(
   const hashManifest = buildHashManifest(fileContents);
   await writeFile(hashManifestPath, hashManifest, "utf8");
   filesCreated.push(hashManifestPath);
+  const signature = signManifest(packet, hashManifest);
+  const signaturePath = signature ? path.join(runPath, "10-scribe-manifest-signature.json") : null;
+
+  if (signaturePath) {
+    await writeFile(signaturePath, `${JSON.stringify(signature, null, 2)}\n`, "utf8");
+    filesCreated.push(signaturePath);
+  }
+
+  await writeFile(
+    path.join(plan.rootPath, "latest-run.json"),
+    `${JSON.stringify(
+      {
+        missionId: packet.missionId,
+        packetId: packet.packetId,
+        rootPath: plan.rootPath,
+        runPath,
+        updatedAt: toTimestamp(),
+        signature: signature
+          ? {
+              algorithm: signature.algorithm,
+              keyId: signature.keyId,
+              signedAt: signature.signedAt,
+            }
+          : null,
+      },
+      null,
+      2,
+    )}\n`,
+    "utf8",
+  );
 
   return {
     rootPath: plan.rootPath,
+    runPath,
     directoriesCreated,
     filesCreated,
     scribeReportPath,
@@ -702,5 +960,8 @@ export async function materializeOutputStructure(
     auditReportPath,
     failurePathReportPath,
     hashManifestPath,
+    signaturePath,
+    attestationPath,
+    executionEvidencePath,
   };
 }

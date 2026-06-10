@@ -7,6 +7,32 @@ export interface RuntimeReference {
   kind: string;
 }
 
+export interface ProductionProfile {
+  mode: "prototype" | "production";
+  evidenceLevel: "governance-shaped" | "runtime-attested";
+  retentionPolicy: "replace-root" | "append-only-runs";
+  manifestStrategy: "hash-only" | "hmac-sha256";
+}
+
+export interface ManifestSignature {
+  algorithm: "hmac-sha256";
+  keyId: string;
+  signature: string;
+  signedAt: RuntimeTimestamp;
+}
+
+export interface ExecutionEvidence {
+  runtimeSessionId: string;
+  initiatedAt: RuntimeTimestamp;
+  initiatedBy: string;
+  missionState: string;
+  topologyAssigned: boolean;
+  requiredProfessions: string[];
+  optionalProfessions: string[];
+  activeDelegationCount: number;
+  evidenceRefs: string[];
+}
+
 export interface AuditRecord {
   at: RuntimeTimestamp;
   actorId: string;
