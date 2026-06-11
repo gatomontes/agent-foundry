@@ -1,4 +1,5 @@
 import { assertNonEmpty, toTimestamp, type RuntimeTimestamp } from "../shared/types.js";
+import { assertValidCitadelRookIntake } from "../schema/citadel-boundary-validator.js";
 import { createAuditScroll, recordScrollEntry } from "./scribe.js";
 import type { OperatorPromptRequest } from "./types.js";
 
@@ -70,6 +71,7 @@ export class Isolde {
       `Isolde normalized operator request ${intent.requestId}.`,
     );
 
+    assertValidCitadelRookIntake(packet);
     this.forwardedIntake.push(packet);
     return packet;
   }
@@ -100,6 +102,7 @@ export class Isolde {
       `Isolde attached clarification answers for request ${priorPacket.requestId}.`,
     );
 
+    assertValidCitadelRookIntake(packet);
     this.forwardedIntake.push(packet);
     return packet;
   }

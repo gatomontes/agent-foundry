@@ -102,6 +102,10 @@ function validateValue(value: unknown, schema: JsonSchema, pathLabel: string, is
 }
 
 function schemaPath(fileName: string): string {
+  if (fileName.startsWith("citadel.")) {
+    return path.join(process.cwd(), "..", "citadel", "schema", fileName);
+  }
+
   return path.join(process.cwd(), "schema", fileName);
 }
 

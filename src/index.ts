@@ -22,6 +22,7 @@ export * from "./runtime/output/types.js";
 export * from "./runtime/output/carmilla.js";
 export * from "./runtime/schema/types.js";
 export * from "./runtime/schema/validator.js";
+export * from "./runtime/schema/citadel-boundary-validator.js";
 export * from "./runtime/schema/codex-skill-validator.js";
 export * from "./runtime/deployment/lifecycle.js";
 export * from "./runtime/staffing/types.js";

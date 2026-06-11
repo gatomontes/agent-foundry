@@ -6,6 +6,7 @@ import { validateFoundryProductionPacket } from "./boundary/packets.js";
 import type { FoundryProductionPacket } from "./boundary/types.js";
 import { createDelegationPacket, transitionDelegation } from "./delegation/packet.js";
 import type { DelegationPacket, DelegationStatus } from "./delegation/types.js";
+import { assertValidCitadelDelegationScroll } from "./schema/citadel-boundary-validator.js";
 import { toTimestamp, type ExecutionEvidence } from "./shared/types.js";
 import { createMissionSnapshot, transitionMission, withMissionBlocker } from "./state/machine.js";
 import type { MissionSnapshot, MissionState } from "./state/types.js";
@@ -61,6 +62,7 @@ export class MissionRuntime {
 
   delegate(packet: Omit<DelegationPacket, "createdAt" | "updatedAt" | "status">): DelegationPacket {
     const delegation = createDelegationPacket(packet);
+    assertValidCitadelDelegationScroll(delegation);
     this.delegations.set(delegation.id, delegation);
     this.mission.activeDelegationIds.push(delegation.id);
     return delegation;

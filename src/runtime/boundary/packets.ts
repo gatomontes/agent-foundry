@@ -1,5 +1,10 @@
 import { assertNonEmpty } from "../shared/types.js";
 import { requireProfessions } from "../professions/registry.js";
+import {
+  assertValidCitadelOperatorPromptRequest,
+  assertValidCitadelProductionOrder,
+  assertValidCitadelRookReturnPacket,
+} from "../schema/citadel-boundary-validator.js";
 import { validateTopology } from "../topology/graph.js";
 import type {
   CitadelRookReturnPacket,
@@ -50,6 +55,7 @@ function validateReturnStatus(status: RookReturnStatus): RookReturnStatus {
 }
 
 export function validateOperatorPromptRequest(packet: OperatorPromptRequest): OperatorPromptRequest {
+  assertValidCitadelOperatorPromptRequest(packet);
   assertNonEmpty(packet.packetId, "operatorPromptRequest.packetId");
   assertNonEmpty(packet.missionId, "operatorPromptRequest.missionId");
   assertNonEmpty(packet.reason, "operatorPromptRequest.reason");
@@ -70,6 +76,7 @@ export function validateOperatorPromptRequest(packet: OperatorPromptRequest): Op
 }
 
 export function validateFoundryProductionPacket(packet: FoundryProductionPacket): FoundryProductionPacket {
+  assertValidCitadelProductionOrder(packet);
   assertNonEmpty(packet.packetId, "foundryProductionPacket.packetId");
   assertNonEmpty(packet.missionId, "foundryProductionPacket.missionId");
   assertNonEmpty(packet.citadelRookReference, "foundryProductionPacket.citadelRookReference");
@@ -165,6 +172,7 @@ export function validateFoundryProductionPacket(packet: FoundryProductionPacket)
 export function normalizeCitadelReturnForFoundry(
   packet: CitadelRookReturnPacket,
 ): FoundryProductionPacket | OperatorPromptRequest {
+  assertValidCitadelRookReturnPacket(packet);
   assertNonEmpty(packet.packetId, "citadelRookReturn.packetId");
   assertNonEmpty(packet.missionId, "citadelRookReturn.missionId");
 
