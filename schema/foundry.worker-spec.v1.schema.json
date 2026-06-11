@@ -1,0 +1,159 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "foundry.worker-spec.v1",
+  "title": "Foundry Worker Spec v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schema",
+    "missionId",
+    "packetId",
+    "objective",
+    "worker",
+    "deployment",
+    "contract",
+    "foundryRuntimeContext"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "schema": {
+      "const": "foundry.worker-spec.v1"
+    },
+    "missionId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "packetId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "objective": {
+      "type": "string",
+      "minLength": 1
+    },
+    "worker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "mode",
+        "required",
+        "purpose",
+        "rationale"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "mode": {
+          "enum": ["profession", "persona", "agent"]
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "deployment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "targetType",
+        "activationModel"
+      ],
+      "properties": {
+        "status": {
+          "const": "forged-spec"
+        },
+        "targetType": {
+          "enum": ["profession", "persona", "agent"]
+        },
+        "activationModel": {
+          "enum": [
+            "worker-spec-only",
+            "persona-only-artifacts",
+            "codex-skill",
+            "local-agent-manifest"
+          ]
+        }
+      }
+    },
+    "contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "primaryOutcome",
+        "operatingNotes"
+      ],
+      "properties": {
+        "primaryOutcome": {
+          "type": "string",
+          "minLength": 1
+        },
+        "operatingNotes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "foundryRuntimeContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "templateId",
+        "consequenceTier",
+        "runtimeRoles",
+        "optionalSupportRoles"
+      ],
+      "properties": {
+        "templateId": {
+          "enum": [
+            "rapid-prototype",
+            "verification-heavy",
+            "saas-build",
+            "creative-development"
+          ]
+        },
+        "consequenceTier": {
+          "enum": ["trivial", "routine", "important", "critical"]
+        },
+        "runtimeRoles": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "optionalSupportRoles": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

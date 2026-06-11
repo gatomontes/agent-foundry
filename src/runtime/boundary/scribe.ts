@@ -6,16 +6,18 @@ export type ScrollStation =
   | "foundry-scribe"
   | "citadel-rook"
   | "citadel-scribe"
+  | "citadel-notary"
   | "citadel-core";
 
 export type ScrollAction =
-  | "packet-created"
-  | "packet-forwarded"
-  | "packet-received"
-  | "packet-recorded"
-  | "packet-reviewed"
-  | "packet-returned"
-  | "packet-repackaged";
+  | "scroll-created"
+  | "scroll-forwarded"
+  | "scroll-received"
+  | "scroll-recorded"
+  | "scroll-reviewed"
+  | "scroll-notarized"
+  | "scroll-returned"
+  | "scroll-repackaged";
 
 export interface ScrollEntry {
   at: RuntimeTimestamp;
@@ -26,18 +28,18 @@ export interface ScrollEntry {
 
 export interface AuditScroll {
   scrollId: string;
-  packetId: string;
+  attachedScrollId: string;
   missionId: string | null;
   entries: ScrollEntry[];
   clockCursorMs: number;
 }
 
-export function createAuditScroll(packetId: string, missionId: string | null = null): AuditScroll {
-  assertNonEmpty(packetId, "scroll.packetId");
+export function createAuditScroll(attachedScrollId: string, missionId: string | null = null): AuditScroll {
+  assertNonEmpty(attachedScrollId, "scroll.attachedScrollId");
 
   return {
-    scrollId: `scroll-${packetId}`,
-    packetId,
+    scrollId: `scroll-${attachedScrollId}`,
+    attachedScrollId,
     missionId,
     entries: [],
     clockCursorMs: Date.now(),
@@ -46,9 +48,10 @@ export function createAuditScroll(packetId: string, missionId: string | null = n
 
 function nextScrollTimestamp(scroll: AuditScroll, action: ScrollAction): RuntimeTimestamp {
   const minimumAdvanceMs =
-    action === "packet-reviewed" ? 650
-    : action === "packet-repackaged" ? 420
-    : action === "packet-returned" ? 260
+    action === "scroll-reviewed" ? 650
+    : action === "scroll-notarized" ? 500
+    : action === "scroll-repackaged" ? 420
+    : action === "scroll-returned" ? 260
     : 180;
   const now = Date.now();
   scroll.clockCursorMs = Math.max(scroll.clockCursorMs + minimumAdvanceMs, now);

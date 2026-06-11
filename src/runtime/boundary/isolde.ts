@@ -1,4 +1,5 @@
 import { assertNonEmpty, toTimestamp, type RuntimeTimestamp } from "../shared/types.js";
+import { assertValidCitadelRookIntake } from "../schema/citadel-boundary-validator.js";
 import { createAuditScroll, recordScrollEntry } from "./scribe.js";
 import type { OperatorPromptRequest } from "./types.js";
 
@@ -26,6 +27,13 @@ export interface SurfacedPrompt {
   operatorId: string;
   reason: string;
   questions: string[];
+  blockingIssues: string[];
+  requiredActions: string[];
+  recommendedActions: string[];
+  blockedActions: string[];
+  humanDecisionsRequired: string[];
+  unresolvedQuestions: string[];
+  archivalReference: string | null;
   surfacedAt: RuntimeTimestamp;
 }
 
@@ -59,10 +67,11 @@ export class Isolde {
     recordScrollEntry(
       packet.scroll,
       "isolde",
-      "packet-created",
+      "scroll-created",
       `Isolde normalized operator request ${intent.requestId}.`,
     );
 
+    assertValidCitadelRookIntake(packet);
     this.forwardedIntake.push(packet);
     return packet;
   }
@@ -85,14 +94,15 @@ export class Isolde {
       createdAt: toTimestamp(),
     };
 
-    packet.scroll.packetId = packet.packetId;
+    packet.scroll.attachedScrollId = packet.packetId;
     recordScrollEntry(
       packet.scroll,
       "isolde",
-      "packet-repackaged",
+      "scroll-repackaged",
       `Isolde attached clarification answers for request ${priorPacket.requestId}.`,
     );
 
+    assertValidCitadelRookIntake(packet);
     this.forwardedIntake.push(packet);
     return packet;
   }
@@ -105,6 +115,14 @@ export class Isolde {
       operatorId,
       reason: promptRequest.reason,
       questions: promptRequest.questions,
+      blockingIssues: promptRequest.blockingIssues,
+      requiredActions: promptRequest.notarialRecord?.preReturnSummary.requiredActions ?? [],
+      recommendedActions: promptRequest.notarialRecord?.preReturnSummary.recommendedActions ?? [],
+      blockedActions: promptRequest.notarialRecord?.preReturnSummary.blockedActions ?? [],
+      humanDecisionsRequired: promptRequest.notarialRecord?.preReturnSummary.humanDecisionsRequired ?? [],
+      unresolvedQuestions:
+        promptRequest.notarialRecord?.stationFindings.flatMap((finding) => finding.unresolvedQuestions) ?? [],
+      archivalReference: promptRequest.notarialRecord?.preReturnSummary.archivalReference ?? null,
       surfacedAt: toTimestamp(),
     };
 

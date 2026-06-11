@@ -22,6 +22,22 @@ Phase 3 boundary alignment adds:
 
 The initial runtime is intentionally small. It exists to transform doctrine into constrained, typed, inspectable software without pretending the full Foundry already exists.
 
+Production-style runs now preserve append-only output history under:
+
+`./output/{project-slug}/runs/{timestamp}-{packet}/`
+
+and can emit:
+
+- `mission-attestation.json`
+- `execution-evidence.md`
+- `output-manifest.sha256`
+- `manifest-signature.json` when `FOUNDRY_MANIFEST_SECRET` is configured
+
+The runtime resolves `FOUNDRY_MANIFEST_SECRET` from the live environment first, then from:
+
+- `./.foundry.env`
+- `./.env.local`
+
 To inspect the current boundary flow from the terminal, run:
 
 `npm.cmd run example`

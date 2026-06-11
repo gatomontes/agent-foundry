@@ -12,6 +12,16 @@ It receives governed packets from Citadel and converts them into:
 - continuity-preserving operator prompting through Isolde,
 - governed return handling.
 
+The current runtime now includes production-oriented output capabilities:
+- append-only run folders under each mission output root,
+- runtime initiation evidence attached at production start,
+- machine-readable mission attestation artifacts,
+- hash manifests for every run,
+- optional HMAC-SHA256 manifest signatures when `FOUNDRY_MANIFEST_SECRET` is configured.
+
+Repo-local secret configuration is supported through `.foundry.env` or `.env.local`.
+`FOUNDRY_MANIFEST_SECRET` in either file will be used automatically by the runtime.
+
 ## Core Distinction
 
 ```txt

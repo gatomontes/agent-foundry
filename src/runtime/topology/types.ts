@@ -1,6 +1,6 @@
 import type { ConsequenceTier } from "../shared/types.js";
 
-export type FlowTemplateId = "rapid-prototype" | "verification-heavy" | "saas-build";
+export type FlowTemplateId = "rapid-prototype" | "verification-heavy" | "saas-build" | "creative-development";
 export type NodeKind = "intake" | "coordination" | "execution" | "verification" | "critique" | "audit" | "disposition";
 export type EdgeKind = "sequence" | "review" | "escalation";
 

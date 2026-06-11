@@ -1,4 +1,6 @@
 node_modules/
 dist/
+.foundry.env
+.env.local
 output/*
 !output/README.md

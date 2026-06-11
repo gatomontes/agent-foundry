@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "foundry.worker-manifest.v1",
+  "title": "Foundry Worker Manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schema",
+    "missionId",
+    "packetId",
+    "staffingIntent",
+    "deploymentTarget",
+    "handoffDirective",
+    "targetCount",
+    "workers"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "schema": {
+      "const": "foundry.worker-manifest.v1"
+    },
+    "missionId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "packetId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "staffingIntent": {
+      "type": "string",
+      "minLength": 1
+    },
+    "deploymentTarget": {
+      "enum": [
+        "worker-spec-only",
+        "persona-only-artifacts",
+        "codex-skill",
+        "local-agent-manifest"
+      ]
+    },
+    "handoffDirective": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recipientType",
+        "mode",
+        "packageScope",
+        "operatorDestinationPolicy",
+        "rationale"
+      ],
+      "properties": {
+        "recipientType": {
+          "enum": ["operator", "agent", "skill"]
+        },
+        "mode": {
+          "enum": ["operator-delivery", "package-reference"]
+        },
+        "packageScope": {
+          "const": "run-package"
+        },
+        "operatorDestinationPolicy": {
+          "enum": ["choose-at-return", "not-applicable"]
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "targetCount": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "workers": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "mode",
+          "required",
+          "specFile"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "mode": {
+            "enum": ["profession", "persona", "agent"]
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "specFile": {
+            "type": "string",
+            "pattern": "^11-worker-.+\\.json$"
+          }
+        }
+      }
+    }
+  }
+}

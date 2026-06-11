@@ -4,9 +4,53 @@ import { createAuditScroll, recordScrollEntry } from "../boundary/scribe.js";
 import type {
   CitadelRookReturnPacket,
   FoundryProductionPacket,
+  NotarialRecord,
   OperatorPromptRequest,
+  RookReturnStatus,
 } from "../boundary/types.js";
 import type { MissionTopology } from "../topology/types.js";
+
+function exampleNotarialRecord(
+  missionId: string,
+  dispositionContext: string,
+  recommendedActions: string[],
+  blockedActions: string[],
+  humanDecisionsRequired: string[],
+): NotarialRecord {
+  return {
+    preparedBy: "citadel-notary",
+    preparedAt: toTimestamp(),
+    stationFindings: [
+      {
+        station: "citadel-core",
+        findingSummary: `Citadel recorded governed findings for ${missionId}.`,
+        evidenceRefs: [`mission:${missionId}`],
+        proposedActions: recommendedActions,
+        blockedActions,
+        unresolvedQuestions: humanDecisionsRequired,
+      },
+    ],
+    preReturnSummary: {
+      dispositionContext,
+      requiredActions: ["Preserve the summary with the return scroll."],
+      recommendedActions,
+      blockedActions,
+      humanDecisionsRequired,
+      followUpRoutes: ["foundry-rook", "isolde"],
+      archivalCopyCreated: true,
+      archivalReference: `archive://citadel/notary/${missionId}`,
+    },
+  };
+}
+
+function exampleReturnStatus(): RookReturnStatus {
+  return {
+    normalizedByRook: true,
+    notarialSummaryPresent: true,
+    archivalCopyConfirmed: true,
+    readyForExternalReturn: true,
+  };
+}
 
 export function exampleSaasBuildTopology(): MissionTopology {
   return {
@@ -83,7 +127,20 @@ export function exampleClarificationIntent(): OperatorIntent {
 
 export function exampleProductionOrder(): FoundryProductionPacket {
   const scroll = createAuditScroll("fp-001", "mission-saas-001");
-  recordScrollEntry(scroll, "citadel-rook", "packet-returned", "Example production packet prepared by Citadel Rook.");
+  recordScrollEntry(scroll, "citadel-notary", "scroll-notarized", "Example notarial summary prepared before Foundry return.");
+  recordScrollEntry(scroll, "citadel-rook", "scroll-returned", "Example production scroll prepared by Citadel Rook.");
+  const notarialRecord = exampleNotarialRecord(
+    "mission-saas-001",
+    "Production is ready for Foundry handling but remains untrusted for release until downstream verification and operator approval complete.",
+    [
+      "Build the smallest governed runtime shell first.",
+      "Tighten verification before any trusted release claim.",
+      "Strengthen output lineage and reviewability.",
+    ],
+    ["Treat trusted release as blocked until verification concludes."],
+    ["Confirm whether the operator wants production initiated now."],
+  );
+  const returnStatus = exampleReturnStatus();
 
   return {
     packetId: "fp-001",
@@ -123,6 +180,43 @@ export function exampleProductionOrder(): FoundryProductionPacket {
     },
     consequenceTier: "routine",
     templateId: "saas-build",
+    staffingDirective: {
+      intent:
+        "Infer the professions/personas the requester actually needs for this mission, then forge those workers as the production target. Foundry's own runtime crew is supporting infrastructure, not the answer.",
+      targets: [
+        {
+          id: "domain-lead-persona",
+          title: "Domain Lead Persona",
+          mode: "persona",
+          purpose: "Act as the primary domain owner for the requested work and shape the downstream specialist roster.",
+          rationale:
+            "The example packet is generic, so it defaults to forging a domain-owning lead rather than pretending the runtime crew is the answer.",
+          required: true,
+        },
+        {
+          id: "implementation-specialist",
+          title: "Implementation Specialist",
+          mode: "persona",
+          purpose: "Translate the domain lead's requirements into concrete system or delivery work.",
+          rationale:
+            "A generic mission still benefits from a downstream implementation counterpart once the domain lead is identified.",
+          required: false,
+        },
+      ],
+    },
+    deploymentDirective: {
+      target: "worker-spec-only",
+      rationale:
+        "The example packet defaults to validated worker specs only until an operator chooses a downstream deployment adapter.",
+    },
+    handoffDirective: {
+      recipientType: "operator",
+      mode: "operator-delivery",
+      packageScope: "run-package",
+      operatorDestinationPolicy: "choose-at-return",
+      rationale:
+        "The example flow assumes a human operator is receiving the package and may choose where the returned package should be placed.",
+    },
     requiredProfessionIds: [
       "systems-architect",
       "runtime-operator",
@@ -133,11 +227,19 @@ export function exampleProductionOrder(): FoundryProductionPacket {
       "Verification remains mandatory before any trusted disposition.",
       "Foundry must preserve artifact lineage for implementation outputs.",
     ],
+    productionProfile: {
+      mode: "production",
+      evidenceLevel: "governance-shaped",
+      retentionPolicy: "append-only-runs",
+      manifestStrategy: "hmac-sha256",
+    },
     artifacts: [
       { id: "artifact-arch-001", kind: "architecture-brief" },
       { id: "artifact-plan-001", kind: "implementation-plan" },
     ],
     scroll,
+    notarialRecord,
+    returnStatus,
     topology: exampleSaasBuildTopology(),
     createdAt: toTimestamp(),
   };
@@ -145,7 +247,22 @@ export function exampleProductionOrder(): FoundryProductionPacket {
 
 export function exampleOperatorPromptRequest(): OperatorPromptRequest {
   const scroll = createAuditScroll("opr-001", "mission-saas-clarify-001");
-  recordScrollEntry(scroll, "citadel-rook", "packet-returned", "Example clarification packet prepared by Citadel Rook.");
+  recordScrollEntry(scroll, "citadel-notary", "scroll-notarized", "Example clarification notarial summary prepared before Foundry return.");
+  recordScrollEntry(scroll, "citadel-rook", "scroll-returned", "Example clarification scroll prepared by Citadel Rook.");
+  const notarialRecord = exampleNotarialRecord(
+    "mission-saas-clarify-001",
+    "Production remains blocked pending operator clarification.",
+    [
+      "Answer the first capability question.",
+      "Answer the preferred flow question.",
+    ],
+    ["Do not initiate production while clarification remains unresolved."],
+    [
+      "What is the first concrete SaaS capability that should be implemented?",
+      "Should the first runtime pass optimize for rapid prototype, creative development, or verification-heavy flow?",
+    ],
+  );
+  const returnStatus = exampleReturnStatus();
 
   return {
     packetId: "opr-001",
@@ -153,7 +270,7 @@ export function exampleOperatorPromptRequest(): OperatorPromptRequest {
     reason: "Citadel requires clarification before production can begin.",
     questions: [
       "What is the first concrete SaaS capability that should be implemented?",
-      "Should the first runtime pass optimize for rapid prototype or verification-heavy flow?",
+      "Should the first runtime pass optimize for rapid prototype, creative development, or verification-heavy flow?",
     ],
     blockingIssues: [
       "Primary deliverable is still too broad.",
@@ -161,6 +278,8 @@ export function exampleOperatorPromptRequest(): OperatorPromptRequest {
     ],
     returnRoute: "isolde",
     scroll,
+    notarialRecord,
+    returnStatus,
     createdAt: toTimestamp(),
   };
 }
@@ -174,7 +293,9 @@ export function exampleProductionReturnPacket(): CitadelRookReturnPacket {
     source: "citadel-rook",
     returnKind: "production-order",
     scroll: productionOrder.scroll,
+    notarialRecord: productionOrder.notarialRecord!,
     productionOrder,
+    returnStatus: productionOrder.returnStatus!,
     createdAt: toTimestamp(),
   };
 }
@@ -188,7 +309,9 @@ export function examplePromptReturnPacket(): CitadelRookReturnPacket {
     source: "citadel-rook",
     returnKind: "operator-prompt-request",
     scroll: operatorPromptRequest.scroll,
+    notarialRecord: operatorPromptRequest.notarialRecord!,
     operatorPromptRequest,
+    returnStatus: operatorPromptRequest.returnStatus!,
     createdAt: toTimestamp(),
   };
 }

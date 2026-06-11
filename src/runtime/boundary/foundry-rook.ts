@@ -49,16 +49,16 @@ export class FoundryRook {
   }
 
   receiveIsoldeIntake(packet: IsoldeIntakePacket): IsoldeIntakePacket {
-    recordScrollEntry(packet.scroll, "foundry-rook", "packet-received", "Foundry Rook received intake from Isolde.");
-    this.scribe.record(packet.scroll, "packet-recorded", "Foundry Scribe recorded outbound transfer toward Citadel.");
-    recordScrollEntry(packet.scroll, "foundry-rook", "packet-forwarded", "Foundry Rook forwarded intake to Citadel.");
+    recordScrollEntry(packet.scroll, "foundry-rook", "scroll-received", "Foundry Rook received intake from Isolde.");
+    this.scribe.record(packet.scroll, "scroll-recorded", "Foundry Scribe recorded outbound transfer toward Citadel.");
+    recordScrollEntry(packet.scroll, "foundry-rook", "scroll-forwarded", "Foundry Rook forwarded intake to Citadel.");
     this.forwardedIntake.push(packet);
     return packet;
   }
 
   receiveCitadelReturn(packet: CitadelRookReturnPacket): FoundryRookOutcome {
-    recordScrollEntry(packet.scroll, "foundry-rook", "packet-received", "Foundry Rook received return packet from Citadel Rook.");
-    this.scribe.record(packet.scroll, "packet-recorded", "Foundry Scribe recorded the returning packet.");
+    recordScrollEntry(packet.scroll, "foundry-rook", "scroll-received", "Foundry Rook received return scroll from Citadel Rook.");
+    this.scribe.record(packet.scroll, "scroll-recorded", "Foundry Scribe recorded the returning scroll.");
     const normalized = normalizeCitadelReturnForFoundry(packet);
 
     if ("citadelRookReference" in normalized) {
@@ -72,8 +72,13 @@ export class FoundryRook {
   }
 
   initiateProduction(packet: FoundryProductionPacket): ProductionInitiatedOutcome {
-    this.scribe.record(packet.scroll, "packet-recorded", "Foundry Scribe recorded operator-approved production initiation.");
+    this.scribe.record(packet.scroll, "scroll-recorded", "Foundry Scribe recorded operator-approved production initiation.");
     const missionRuntime = new MissionRuntime(packet);
+    packet.executionEvidence = missionRuntime.buildExecutionEvidence("foundry-rook");
+    packet.productionProfile = {
+      ...packet.productionProfile,
+      evidenceLevel: "runtime-attested",
+    };
     this.activeMissions.set(packet.missionId, missionRuntime);
 
     return {
@@ -84,7 +89,7 @@ export class FoundryRook {
   }
 
   routeOperatorPrompt(promptRequest: OperatorPromptRequest): OperatorPromptRoutedOutcome {
-    this.scribe.record(promptRequest.scroll, "packet-recorded", "Foundry Scribe recorded an operator clarification request.");
+    this.scribe.record(promptRequest.scroll, "scroll-recorded", "Foundry Scribe recorded an operator clarification request.");
     this.routedPrompts.push(promptRequest);
 
     return {
