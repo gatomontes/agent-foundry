@@ -84,6 +84,61 @@ const flowTemplates: FlowTemplate[] = [
       { from: "audit", to: "disposition", kind: "review" },
     ],
   },
+  {
+    id: "creative-development",
+    name: "Creative Development Flow",
+    recommendedFor: [
+      "songwriting",
+      "title ideation",
+      "lyric development",
+      "copy ideation",
+      "creative systems",
+      "brand language",
+    ],
+    minimumConsequenceTier: "trivial",
+    professionIds: ["systems-architect", "runtime-operator", "verification-specialist"],
+    optionalProfessionIds: ["critique-authority", "research-analyst", "executive-secretary"],
+    nodes: [
+      { id: "intake", label: "Executive Intake", kind: "intake", required: true },
+      {
+        id: "architecture",
+        label: "Creative Framing",
+        kind: "coordination",
+        professionId: "systems-architect",
+        required: true,
+      },
+      {
+        id: "execution",
+        label: "Generation",
+        kind: "execution",
+        professionId: "runtime-operator",
+        required: true,
+      },
+      {
+        id: "verification",
+        label: "Fit Verification",
+        kind: "verification",
+        professionId: "verification-specialist",
+        required: true,
+      },
+      {
+        id: "critique",
+        label: "Creative Review",
+        kind: "critique",
+        professionId: "critique-authority",
+        required: false,
+      },
+      { id: "disposition", label: "Creative Disposition", kind: "disposition", required: true },
+    ],
+    edges: [
+      { from: "intake", to: "architecture", kind: "sequence" },
+      { from: "architecture", to: "execution", kind: "sequence" },
+      { from: "execution", to: "verification", kind: "sequence" },
+      { from: "verification", to: "critique", kind: "review" },
+      { from: "verification", to: "disposition", kind: "sequence" },
+      { from: "critique", to: "disposition", kind: "review" },
+    ],
+  },
 ];
 
 const templateMap = new Map(flowTemplates.map((template) => [template.id, template]));

@@ -128,6 +128,53 @@ function flatArtifactPath(rootPath: string, prefix: string, fileName: string): s
   return `${rootPath}/${prefix}-${normalizedFileName}`;
 }
 
+function workerManifestPathFor(runPath: string): string {
+  return `${runPath}/11-workers-manifest.json`;
+}
+
+function runPackageManifestPathFor(runPath: string): string {
+  return `${runPath}/13-run-package-manifest.json`;
+}
+
+function workerSpecPathFor(runPath: string, workerId: string): string {
+  return `${runPath}/11-worker-${workerId}.json`;
+}
+
+function workerSpecPathsFor(packet: FoundryProductionPacket, runPath: string): string[] {
+  return packet.staffingDirective.targets.map((target) => workerSpecPathFor(runPath, target.id));
+}
+
+function codexSkillRootFor(runPath: string): string {
+  return `${runPath}/12-codex-skills`;
+}
+
+function codexSkillBundleDirFor(runPath: string, workerId: string): string {
+  return `${codexSkillRootFor(runPath)}/${workerId}`;
+}
+
+function codexSkillBundlePathsFor(packet: FoundryProductionPacket, runPath: string): string[] {
+  if (packet.deploymentDirective.target !== "codex-skill") {
+    return [];
+  }
+
+  return packet.staffingDirective.targets.map((target) => codexSkillBundleDirFor(runPath, target.id));
+}
+
+function normalizePackagePath(value: string): string {
+  return value.replace(/\\/g, "/");
+}
+
+function relativeToRunPath(runPath: string, targetPath: string): string {
+  const relativePath = path.relative(runPath, targetPath);
+  return relativePath.length === 0 ? "." : normalizePackagePath(relativePath);
+}
+
+function isWithinRunPath(runPath: string, candidatePath: string): boolean {
+  const runAbsolute = path.resolve(runPath);
+  const candidateAbsolute = path.resolve(candidatePath);
+  return candidateAbsolute === runAbsolute || candidateAbsolute.startsWith(`${runAbsolute}${path.sep}`);
+}
+
 export function proposeOutputStructure(packet: FoundryProductionPacket): OutputStructureProposal {
   const projectSlug = projectSlugFor(packet);
   const rootPath = `output/${projectSlug}`;
@@ -149,6 +196,9 @@ export function proposeOutputStructure(packet: FoundryProductionPacket): OutputS
         flatArtifactPath(runPath, "07-attestation", "execution-evidence.md"),
         flatArtifactPath(runPath, "08-scribe", "output-manifest.sha256"),
         flatArtifactPath(runPath, "08-scribe", "scribe-report.md"),
+        workerManifestPathFor(runPath),
+        ...workerSpecPathsFor(packet, runPath),
+        runPackageManifestPathFor(runPath),
       ],
       rationale: [
         "Verification-heavy work still requires strong separation between execution, verification, critique, and audit custody.",
@@ -171,6 +221,9 @@ export function proposeOutputStructure(packet: FoundryProductionPacket): OutputS
         flatArtifactPath(runPath, "05-failure", "failure-path.md"),
         flatArtifactPath(runPath, "06-scribe", "output-manifest.sha256"),
         flatArtifactPath(runPath, "06-scribe", "scribe-report.md"),
+        workerManifestPathFor(runPath),
+        ...workerSpecPathsFor(packet, runPath),
+        runPackageManifestPathFor(runPath),
       ],
       rationale: [
         "Rapid prototype work favors low-friction structure while still preserving mission, prototype, and verification custody.",
@@ -198,6 +251,9 @@ export function proposeOutputStructure(packet: FoundryProductionPacket): OutputS
         flatArtifactPath(runPath, "07-attestation", "execution-evidence.md"),
         flatArtifactPath(runPath, "08-scribe", "output-manifest.sha256"),
         flatArtifactPath(runPath, "08-scribe", "scribe-report.md"),
+        workerManifestPathFor(runPath),
+        ...workerSpecPathsFor(packet, runPath),
+        runPackageManifestPathFor(runPath),
       ],
       rationale: [
         "Creative-development work benefits from explicit separation between framing, generation, fit verification, and creative review.",
@@ -225,6 +281,9 @@ export function proposeOutputStructure(packet: FoundryProductionPacket): OutputS
       flatArtifactPath(runPath, "09-attestation", "execution-evidence.md"),
       flatArtifactPath(runPath, "10-scribe", "output-manifest.sha256"),
       flatArtifactPath(runPath, "10-scribe", "scribe-report.md"),
+      workerManifestPathFor(runPath),
+      ...workerSpecPathsFor(packet, runPath),
+      runPackageManifestPathFor(runPath),
     ],
     rationale: [
       "SaaS build work benefits from explicit separation between architecture, implementation, verification, and release-facing output.",
@@ -282,6 +341,27 @@ function renderProfessionArtifactExpectations(professions: ProfessionManifest[])
         .map((profession) => `- ${profession.name}: ${profession.expectedArtifacts.join(", ")}`)
         .join("\n")
     : "- none";
+}
+
+function renderStaffingTargets(packet: FoundryProductionPacket): string {
+  return packet.staffingDirective.targets.length > 0
+    ? packet.staffingDirective.targets
+        .map(
+          (target) =>
+            `- ${target.title} (${target.mode}${target.required ? ", required" : ", optional"}): ${target.purpose} Rationale: ${target.rationale}`,
+        )
+        .join("\n")
+    : "- none";
+}
+
+function renderHandoffDirective(packet: FoundryProductionPacket): string {
+  return renderBulletList([
+    `Recipient type: ${packet.handoffDirective.recipientType}`,
+    `Handoff mode: ${packet.handoffDirective.mode}`,
+    `Package scope: ${packet.handoffDirective.packageScope}`,
+    `Operator destination policy: ${packet.handoffDirective.operatorDestinationPolicy}`,
+    `Rationale: ${packet.handoffDirective.rationale}`,
+  ]);
 }
 
 function renderTopologyNodes(packet: FoundryProductionPacket): string {
@@ -401,7 +481,7 @@ function renderVerificationReport(packet: FoundryProductionPacket): string {
     "## Scope",
     "",
     "- Packet integrity at Foundry ingress",
-    "- Required profession preservation",
+    "- Foundry runtime role preservation",
     "- Boundary and scroll continuity",
     "- Carmilla output authority boundaries",
     "- Runtime initiation evidence presence",
@@ -409,7 +489,7 @@ function renderVerificationReport(packet: FoundryProductionPacket): string {
     "## Checks",
     "",
     outcomeLine,
-    "- Required professions preserved.",
+    "- Foundry runtime roles preserved.",
     "- Output structure canonization remains within Carmilla authority boundaries.",
     "- Scroll continuity present on the returning packet.",
     packet.executionEvidence
@@ -562,11 +642,18 @@ function renderMissionFile(packet: FoundryProductionPacket): string {
     "",
     renderBulletList(packet.governanceNotes),
     "",
-    "## Required Professions",
+    "## Mission Target Workers",
+    "",
+    `Intent: ${packet.staffingDirective.intent}`,
+    `Deployment target: ${packet.deploymentDirective.target}`,
+    "",
+    renderStaffingTargets(packet),
+    "",
+    "## Foundry Runtime Roles",
     "",
     renderProfessionSummaries(packet.requiredProfessionIds),
     "",
-    "## Optional Professions",
+    "## Foundry Optional Support Roles",
     "",
     renderProfessionSummaries(packet.optionalProfessionIds),
     "",
@@ -598,8 +685,10 @@ function renderProductionOrderFile(packet: FoundryProductionPacket): string {
     `Template: ${packet.templateId}`,
     `Consequence Tier: ${packet.consequenceTier}`,
     `Output Root: ${plan.rootPath}`,
-    `Required Professions: ${packet.requiredProfessionIds.join(", ")}`,
-    `Optional Professions: ${packet.optionalProfessionIds.join(", ") || "none"}`,
+    `Mission Target Workers: ${packet.staffingDirective.targets.map((target) => target.title).join(", ") || "none"}`,
+    `Deployment Target: ${packet.deploymentDirective.target}`,
+    `Foundry Runtime Roles: ${packet.requiredProfessionIds.join(", ")}`,
+    `Foundry Optional Support Roles: ${packet.optionalProfessionIds.join(", ") || "none"}`,
     "",
     "## Citadel Proposal",
     "",
@@ -611,6 +700,18 @@ function renderProductionOrderFile(packet: FoundryProductionPacket): string {
     "## Governance Instructions",
     "",
     renderBulletList(packet.governanceNotes),
+    "",
+    "## Staffing Directive",
+    "",
+    `Intent: ${packet.staffingDirective.intent}`,
+    `Deployment target: ${packet.deploymentDirective.target}`,
+    `Deployment rationale: ${packet.deploymentDirective.rationale}`,
+    "",
+    renderStaffingTargets(packet),
+    "",
+    "## Handoff Directive",
+    "",
+    renderHandoffDirective(packet),
     "",
     "## Runtime Artifacts Declared By Citadel",
     "",
@@ -649,6 +750,15 @@ function renderArchitectureBrief(packet: FoundryProductionPacket): string {
     "",
     renderProfessionSummaries(packet.requiredProfessionIds),
     "",
+    "## Mission Target Workers",
+    "",
+    `Deployment target: ${packet.deploymentDirective.target}`,
+    renderStaffingTargets(packet),
+    "",
+    "## Handoff Directive",
+    "",
+    renderHandoffDirective(packet),
+    "",
     "## Boundary Constraints",
     "",
     renderBulletList([
@@ -668,13 +778,28 @@ function renderOperatorSummary(packet: FoundryProductionPacket): string {
   return [
     "# Operator Summary",
     "",
-    `Mission ${packet.missionId} has been activated under ${packet.templateId} with ${packet.requiredProfessionIds.join(", ")} as required professions.`,
+    `Mission ${packet.missionId} has been activated under ${packet.templateId}. Foundry's internal runtime crew remains separate from the mission workers being forged.`,
     "",
     "## Immediate Understanding",
     "",
     `Objective: ${packet.objective}`,
     `Execution mode: ${packet.executionMode ?? "normal"}`,
     `Next active node: ${nextActiveNodeLine(packet)}`,
+    "",
+    "## Mission Target Workers",
+    "",
+    `Intent: ${packet.staffingDirective.intent}`,
+    `Deployment target: ${packet.deploymentDirective.target}`,
+    "",
+    renderStaffingTargets(packet),
+    "",
+    "## Handoff Directive",
+    "",
+    renderHandoffDirective(packet),
+    "",
+    "## Foundry Runtime Roles",
+    "",
+    renderProfessionSummaries(packet.requiredProfessionIds),
     "",
     "## Approved Citadel Proposal",
     "",
@@ -826,6 +951,9 @@ function renderMissionAttestation(packet: FoundryProductionPacket): string {
       createdAt: packet.createdAt,
       productionProfile: packet.productionProfile,
       executionEvidence: packet.executionEvidence ?? null,
+      staffingDirective: packet.staffingDirective,
+      deploymentDirective: packet.deploymentDirective,
+      handoffDirective: packet.handoffDirective,
       topologyNodeCount: packet.topology?.nodes.length ?? 0,
       topologyEdgeCount: packet.topology?.edges.length ?? 0,
       requiredProfessionIds: packet.requiredProfessionIds,
@@ -836,6 +964,232 @@ function renderMissionAttestation(packet: FoundryProductionPacket): string {
     null,
     2,
   );
+}
+
+function renderWorkerManifest(packet: FoundryProductionPacket): string {
+  return JSON.stringify(
+    {
+      $schema: "foundry.worker-manifest.v1",
+      schema: "foundry.worker-manifest.v1",
+      missionId: packet.missionId,
+      packetId: packet.packetId,
+      staffingIntent: packet.staffingDirective.intent,
+      deploymentTarget: packet.deploymentDirective.target,
+      handoffDirective: packet.handoffDirective,
+      targetCount: packet.staffingDirective.targets.length,
+      workers: packet.staffingDirective.targets.map((target) => ({
+        id: target.id,
+        title: target.title,
+        mode: target.mode,
+        required: target.required,
+        specFile: `11-worker-${target.id}.json`,
+      })),
+    },
+    null,
+    2,
+  );
+}
+
+function renderRunPackageManifest(args: {
+  packet: FoundryProductionPacket;
+  projectSlug: string;
+  runPath: string;
+  runId: string;
+  includedFiles: string[];
+  includedDirectories: string[];
+  workerManifestPath: string | null;
+  workerSpecPaths: string[];
+  codexSkillBundlePaths: string[];
+  attestationPath: string | null;
+  executionEvidencePath: string | null;
+  critiqueReportPath: string | null;
+  auditReportPath: string | null;
+  failurePathReportPath: string;
+  scribeReportPath: string;
+  hashManifestPath: string;
+  signaturePath: string | null;
+}): string {
+  const {
+    packet,
+    projectSlug,
+    runPath,
+    runId,
+    includedFiles,
+    includedDirectories,
+    workerManifestPath,
+    workerSpecPaths,
+    codexSkillBundlePaths,
+    attestationPath,
+    executionEvidencePath,
+    critiqueReportPath,
+    auditReportPath,
+    failurePathReportPath,
+    scribeReportPath,
+    hashManifestPath,
+    signaturePath,
+  } = args;
+
+  const manifest = {
+    $schema: "foundry.run-package.v1",
+    schema: "foundry.run-package.v1",
+    missionId: packet.missionId,
+    packetId: packet.packetId,
+    projectSlug,
+    runId,
+    packageRoot: ".",
+    objective: packet.objective,
+    templateId: packet.templateId,
+    consequenceTier: packet.consequenceTier,
+    productionProfile: packet.productionProfile,
+    deploymentTarget: packet.deploymentDirective.target,
+    handoffDirective: packet.handoffDirective,
+    workerManifestPath: workerManifestPath ? relativeToRunPath(runPath, workerManifestPath) : null,
+    workerSpecPaths: workerSpecPaths.map((filePath) => relativeToRunPath(runPath, filePath)),
+    codexSkillBundlePaths: codexSkillBundlePaths.map((filePath) => relativeToRunPath(runPath, filePath)),
+    attestationPath: attestationPath ? relativeToRunPath(runPath, attestationPath) : null,
+    executionEvidencePath: executionEvidencePath ? relativeToRunPath(runPath, executionEvidencePath) : null,
+    critiqueReportPath: critiqueReportPath ? relativeToRunPath(runPath, critiqueReportPath) : null,
+    auditReportPath: auditReportPath ? relativeToRunPath(runPath, auditReportPath) : null,
+    failurePathReportPath: relativeToRunPath(runPath, failurePathReportPath),
+    scribeReportPath: relativeToRunPath(runPath, scribeReportPath),
+    hashManifestPath: relativeToRunPath(runPath, hashManifestPath),
+    signaturePath: signaturePath ? relativeToRunPath(runPath, signaturePath) : null,
+    includedDirectories: [...new Set(includedDirectories.map((dirPath) => relativeToRunPath(runPath, dirPath)))],
+    includedFiles: [...new Set(includedFiles.map((filePath) => relativeToRunPath(runPath, filePath)))],
+  } as Record<string, unknown>;
+
+  for (const [key, value] of Object.entries(manifest)) {
+    if (value === null) {
+      delete manifest[key];
+    }
+  }
+
+  return JSON.stringify(manifest, null, 2);
+}
+
+function renderWorkerSpec(packet: FoundryProductionPacket, workerId: string): string {
+  const target = packet.staffingDirective.targets.find((candidate) => candidate.id === workerId);
+
+  if (!target) {
+    return JSON.stringify(
+      {
+        error: `Unknown worker target ${workerId}`,
+        missionId: packet.missionId,
+        packetId: packet.packetId,
+      },
+      null,
+      2,
+    );
+  }
+
+  return JSON.stringify(
+    {
+      $schema: "foundry.worker-spec.v1",
+      schema: "foundry.worker-spec.v1",
+      missionId: packet.missionId,
+      packetId: packet.packetId,
+      objective: packet.objective,
+      worker: {
+        id: target.id,
+        title: target.title,
+        mode: target.mode,
+        required: target.required,
+        purpose: target.purpose,
+        rationale: target.rationale,
+      },
+      deployment: {
+        status: "forged-spec",
+        targetType: target.mode,
+        activationModel: packet.deploymentDirective.target,
+      },
+      contract: {
+        primaryOutcome: target.purpose,
+        operatingNotes: [
+          target.rationale,
+          "This artifact is a production-layer worker specification forged from Foundry staffing inference.",
+          `Selected deployment target: ${packet.deploymentDirective.target}.`,
+          "Downstream runtime adapters should translate this spec into the chosen concrete deployment form.",
+        ],
+      },
+      foundryRuntimeContext: {
+        templateId: packet.templateId,
+        consequenceTier: packet.consequenceTier,
+        runtimeRoles: packet.requiredProfessionIds,
+        optionalSupportRoles: packet.optionalProfessionIds,
+      },
+    },
+    null,
+    2,
+  );
+}
+
+function skillDisplayName(title: string): string {
+  return title
+    .split(/\s+/)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function renderCodexSkillMarkdown(packet: FoundryProductionPacket, workerId: string): string {
+  const target = packet.staffingDirective.targets.find((candidate) => candidate.id === workerId);
+
+  if (!target) {
+    return `# Missing Worker\n\nWorker ${workerId} was not found for mission ${packet.missionId}.\n`;
+  }
+
+  return [
+    "---",
+    `name: ${target.id}`,
+    `description: ${target.purpose} Use when the mission needs ${target.title.toLowerCase()} judgment for ${packet.objective.toLowerCase()}.`,
+    "---",
+    "",
+    `# ${skillDisplayName(target.title)}`,
+    "",
+    "## Overview",
+    "",
+    `${target.purpose}`,
+    "",
+    "## Mission Context",
+    "",
+    `This skill was forged by Foundry for mission \`${packet.missionId}\` from packet \`${packet.packetId}\`.`,
+    `Selected deployment target: \`${packet.deploymentDirective.target}\`.`,
+    "",
+    "## Primary Responsibility",
+    "",
+    `- ${target.purpose}`,
+    `- Rationale: ${target.rationale}`,
+    `- Objective alignment: ${packet.objective}`,
+    "",
+    "## Operating Rules",
+    "",
+    "- Stay within the worker's domain and avoid absorbing unrelated execution ownership.",
+    "- Surface missing information or jurisdiction ambiguity before making high-impact recommendations.",
+    "- Keep outputs compatible with the broader Foundry-governed mission.",
+    "",
+    "## Foundry Runtime Context",
+    "",
+    `- Template: ${packet.templateId}`,
+    `- Consequence tier: ${packet.consequenceTier}`,
+    `- Runtime roles supporting this skill: ${packet.requiredProfessionIds.join(", ")}`,
+    `- Optional support roles: ${packet.optionalProfessionIds.join(", ") || "none"}`,
+    "",
+  ].join("\n");
+}
+
+function renderCodexSkillAgentYaml(packet: FoundryProductionPacket, workerId: string): string {
+  const target = packet.staffingDirective.targets.find((candidate) => candidate.id === workerId);
+
+  if (!target) {
+    return 'interface:\n  display_name: "Missing Worker"\n  short_description: "Worker not found."\n  default_prompt: "Worker not found."\n';
+  }
+
+  return [
+    "interface:",
+    `  display_name: "${skillDisplayName(target.title)}"`,
+    `  short_description: "${target.purpose.replace(/"/g, '\\"')}"`,
+    `  default_prompt: "Use $${target.id} when you need ${target.title} ownership for ${packet.objective.replace(/"/g, '\\"')}."`,
+    "",
+  ].join("\n");
 }
 
 function contentForFile(filePath: string, packet: FoundryProductionPacket): string {
@@ -855,6 +1209,11 @@ function contentForFile(filePath: string, packet: FoundryProductionPacket): stri
   if (filePath.endsWith("prototype-brief.md")) return renderPrototypeBrief(packet);
   if (filePath.endsWith("mission-attestation.json")) return renderMissionAttestation(packet);
   if (filePath.endsWith("execution-evidence.md")) return renderExecutionEvidence(packet);
+  if (filePath.endsWith("11-workers-manifest.json")) return renderWorkerManifest(packet);
+  if (filePath.includes("/11-worker-") && filePath.endsWith(".json")) {
+    const fileName = path.basename(filePath, ".json");
+    return renderWorkerSpec(packet, fileName.replace(/^11-worker-/, ""));
+  }
 
   return `# ${path.basename(filePath)}\n\nGenerated under Carmilla output canonization for mission ${packet.missionId}.\n`;
 }
@@ -877,10 +1236,22 @@ export async function materializeOutputStructure(
   const directoriesCreated: string[] = [];
   const filesCreated: string[] = [];
   const runPath = plan.directories[plan.directories.length - 1] ?? plan.rootPath;
+  const codexSkillBundlePaths = codexSkillBundlePathsFor(packet, runPath);
+  const expectedSignaturePath =
+    packet.productionProfile.manifestStrategy === "hmac-sha256" && manifestSecret()
+      ? path.join(runPath, "10-scribe-manifest-signature.json")
+      : null;
+
+  await rm(runPath, { recursive: true, force: true });
 
   for (const directory of plan.directories) {
     await mkdir(directory, { recursive: true });
     directoriesCreated.push(directory);
+  }
+
+  for (const bundlePath of codexSkillBundlePaths) {
+    await mkdir(path.join(bundlePath, "agents"), { recursive: true });
+    directoriesCreated.push(bundlePath, path.join(bundlePath, "agents"));
   }
 
   const scribeReportPath =
@@ -900,10 +1271,15 @@ export async function materializeOutputStructure(
     plan.canonicalFiles.find((filePath) => filePath.endsWith("mission-attestation.json")) ?? null;
   const executionEvidencePath =
     plan.canonicalFiles.find((filePath) => filePath.endsWith("execution-evidence.md")) ?? null;
+  const workerManifestPath =
+    plan.canonicalFiles.find((filePath) => filePath.endsWith("11-workers-manifest.json")) ?? null;
+  const runPackageManifestPath =
+    plan.canonicalFiles.find((filePath) => filePath.endsWith("13-run-package-manifest.json")) ??
+    runPackageManifestPathFor(runPath);
+  const workerSpecPaths = plan.canonicalFiles.filter(
+    (filePath) => filePath.includes("/11-worker-") && filePath.endsWith(".json"),
+  );
   const fileContents = new Map<string, string>();
-
-  await rm(runPath, { recursive: true, force: true });
-  await mkdir(runPath, { recursive: true });
 
   for (const filePath of plan.canonicalFiles) {
     if (filePath === hashManifestPath) {
@@ -916,11 +1292,54 @@ export async function materializeOutputStructure(
     filesCreated.push(filePath);
   }
 
+  for (const bundlePath of codexSkillBundlePaths) {
+    const workerId = path.basename(bundlePath);
+    const skillPath = path.join(bundlePath, "SKILL.md");
+    const agentPath = path.join(bundlePath, "agents", "openai.yaml");
+    const skillContents = `${renderCodexSkillMarkdown(packet, workerId)}\n`;
+    const agentContents = renderCodexSkillAgentYaml(packet, workerId);
+    fileContents.set(skillPath, skillContents);
+    fileContents.set(agentPath, agentContents);
+    await writeFile(skillPath, skillContents, "utf8");
+    await writeFile(agentPath, agentContents, "utf8");
+    filesCreated.push(skillPath, agentPath);
+  }
+
+  const packagedDirectories = directoriesCreated.filter((directory) => isWithinRunPath(runPath, directory));
+  const packagedFiles = [
+    ...fileContents.keys(),
+    hashManifestPath,
+    runPackageManifestPath,
+    ...(expectedSignaturePath ? [expectedSignaturePath] : []),
+  ].sort((a, b) => a.localeCompare(b));
+  const runPackageManifestContents = `${renderRunPackageManifest({
+    packet,
+    projectSlug: plan.projectSlug,
+    runPath,
+    runId: path.basename(runPath),
+    includedFiles: packagedFiles,
+    includedDirectories: packagedDirectories,
+    workerManifestPath,
+    workerSpecPaths,
+    codexSkillBundlePaths,
+    attestationPath,
+    executionEvidencePath,
+    critiqueReportPath,
+    auditReportPath,
+    failurePathReportPath,
+    scribeReportPath,
+    hashManifestPath,
+    signaturePath: expectedSignaturePath,
+  })}\n`;
+  fileContents.set(runPackageManifestPath, runPackageManifestContents);
+  await writeFile(runPackageManifestPath, runPackageManifestContents, "utf8");
+  filesCreated.push(runPackageManifestPath);
+
   const hashManifest = buildHashManifest(fileContents);
   await writeFile(hashManifestPath, hashManifest, "utf8");
   filesCreated.push(hashManifestPath);
   const signature = signManifest(packet, hashManifest);
-  const signaturePath = signature ? path.join(runPath, "10-scribe-manifest-signature.json") : null;
+  const signaturePath = signature ? expectedSignaturePath : null;
 
   if (signaturePath) {
     await writeFile(signaturePath, `${JSON.stringify(signature, null, 2)}\n`, "utf8");
@@ -955,6 +1374,7 @@ export async function materializeOutputStructure(
     runPath,
     directoriesCreated,
     filesCreated,
+    runPackageManifestPath,
     scribeReportPath,
     critiqueReportPath,
     auditReportPath,
@@ -963,5 +1383,8 @@ export async function materializeOutputStructure(
     signaturePath,
     attestationPath,
     executionEvidencePath,
+    workerManifestPath,
+    workerSpecPaths,
+    codexSkillBundlePaths,
   };
 }

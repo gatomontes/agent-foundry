@@ -4,9 +4,13 @@ import { CitadelScribe, recordScrollEntry } from "./scribe.js";
 import type {
   CitadelProposalItem,
   CitadelRookReturnPacket,
+  DeploymentDirective,
   FoundryProductionPacket,
+  HandoffDirective,
   NotarialRecord,
   RookReturnStatus,
+  StaffingDirective,
+  StaffingTarget,
 } from "./types.js";
 import { exampleProductionOrder, exampleOperatorPromptRequest } from "../examples/fixtures.js";
 
@@ -73,16 +77,30 @@ function classifyTier(packet: IsoldeIntakePacket): FoundryProductionPacket["cons
 }
 
 function requiresClarification(packet: IsoldeIntakePacket): boolean {
+  return clarificationQuestions(packet).length > 0;
+}
+
+function clarificationQuestions(packet: IsoldeIntakePacket): string[] {
   const loweredObjective = packet.objective.toLowerCase();
   const loweredNotes = packet.notes.map((note) => note.toLowerCase());
   const hasCapabilityAnswer = loweredNotes.some((note) => note.startsWith("first concrete capability:"));
   const hasFlowAnswer = loweredNotes.some((note) => note.startsWith("preferred flow:"));
   const clarificationSatisfied = hasCapabilityAnswer && hasFlowAnswer;
+  const hasDeploymentAnswer = loweredNotes.some((note) => note.startsWith("deployment target:"));
+  const questions: string[] = [];
 
-  return (
-    (loweredObjective.includes("have not decided") || loweredObjective.includes("not decided")) &&
-    !clarificationSatisfied
-  );
+  if ((loweredObjective.includes("have not decided") || loweredObjective.includes("not decided")) && !clarificationSatisfied) {
+    questions.push("What is the first concrete SaaS capability that should be implemented?");
+    questions.push("Should the first runtime pass optimize for rapid prototype, creative development, or verification-heavy flow?");
+  }
+
+  if (!hasDeploymentAnswer) {
+    questions.push(
+      "Which deployment target should Foundry produce for the forged workers: worker-spec-only, persona-only-artifacts, codex-skill, or local-agent-manifest?",
+    );
+  }
+
+  return questions;
 }
 
 function requiresFailureCase(packet: IsoldeIntakePacket): boolean {
@@ -178,6 +196,235 @@ function buildProductionProfile(
   };
 }
 
+function inferDeploymentDirective(packet: IsoldeIntakePacket): DeploymentDirective | null {
+  const explicit = extractTaggedNote(packet, "deployment target:");
+
+  if (!explicit) {
+    return null;
+  }
+
+  const normalized = explicit.toLowerCase().trim();
+
+  if (
+    normalized !== "worker-spec-only" &&
+    normalized !== "persona-only-artifacts" &&
+    normalized !== "codex-skill" &&
+    normalized !== "local-agent-manifest"
+  ) {
+    return null;
+  }
+
+  return {
+    target: normalized,
+    rationale: `Operator explicitly selected deployment target ${normalized}.`,
+  };
+}
+
+function inferHandoffDirective(packet: IsoldeIntakePacket): HandoffDirective {
+  const explicitRecipient = extractTaggedNote(packet, "handoff recipient:");
+  const normalizedRecipient = explicitRecipient?.toLowerCase().trim();
+  const recipientType: HandoffDirective["recipientType"] =
+    normalizedRecipient === "agent" || normalizedRecipient === "skill" || normalizedRecipient === "operator"
+      ? normalizedRecipient
+      : "operator";
+
+  if (recipientType === "operator") {
+    return {
+      recipientType,
+      mode: "operator-delivery",
+      packageScope: "run-package",
+      operatorDestinationPolicy: "choose-at-return",
+      rationale:
+        "A human operator is the default recipient in the Isolde entry flow, so Foundry may offer package placement without crossing into installation or activation.",
+    };
+  }
+
+  return {
+    recipientType,
+    mode: "package-reference",
+    packageScope: "run-package",
+    operatorDestinationPolicy: "not-applicable",
+    rationale:
+      "When the recipient is another agent or skill, Foundry should stop at returning package references and avoid any extra delivery ceremony.",
+  };
+}
+
+function slugTitle(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48) || "staffing-target";
+}
+
+function buildStaffingTarget(
+  title: string,
+  mode: StaffingTarget["mode"],
+  purpose: string,
+  rationale: string,
+  required = true,
+): StaffingTarget {
+  return {
+    id: slugTitle(title),
+    title,
+    mode,
+    purpose,
+    rationale,
+    required,
+  };
+}
+
+function uniqueTargets(targets: StaffingTarget[]): StaffingTarget[] {
+  const seen = new Set<string>();
+  const result: StaffingTarget[] = [];
+
+  for (const target of targets) {
+    if (seen.has(target.id)) {
+      continue;
+    }
+
+    seen.add(target.id);
+    result.push(target);
+  }
+
+  return result;
+}
+
+function inferStaffingDirective(
+  packet: IsoldeIntakePacket,
+  templateId: FoundryProductionPacket["templateId"],
+): StaffingDirective {
+  const corpus = `${packet.objective} ${packet.notes.join(" ")}`.toLowerCase();
+  const targets: StaffingTarget[] = [];
+  const mentionsPersona =
+    corpus.includes("persona") || corpus.includes("agent") || corpus.includes("worker") || corpus.includes("team");
+  const defaultMode: StaffingTarget["mode"] = mentionsPersona ? "persona" : "profession";
+
+  if (corpus.includes("puerto rico") || corpus.includes("ivu") || corpus.includes("sales tax")) {
+    targets.push(
+      buildStaffingTarget(
+        "Puerto Rico Sales Tax Compliance Specialist",
+        defaultMode,
+        "Own IVU applicability, exemption handling, bona fide agricultural cases, and transaction-time tax snapshot rules.",
+        "The request references Puerto Rico or sales-tax behavior, which requires a domain owner rather than a generic runtime operator.",
+      ),
+    );
+  }
+
+  if (corpus.includes("pos") || corpus.includes("checkout") || corpus.includes("cashier")) {
+    targets.push(
+      buildStaffingTarget(
+        "POS Systems Architect",
+        defaultMode,
+        "Define lane behavior, cashier workflow, and transaction-boundary rules for point-of-sale execution.",
+        "The request touches live transaction behavior, so a POS-native architecture owner is needed.",
+      ),
+    );
+  }
+
+  if (corpus.includes("payroll")) {
+    targets.push(
+      buildStaffingTarget(
+        "Payroll Compliance Specialist",
+        defaultMode,
+        "Own statutory payroll correctness, release gating, and high-risk workflow interpretation.",
+        "Payroll work needs a primary compliance owner instead of being routed as generic SaaS implementation.",
+      ),
+    );
+  }
+
+  if (corpus.includes("tax") && corpus.includes("payroll")) {
+    targets.push(
+      buildStaffingTarget(
+        "Payroll Tax Operations Specialist",
+        defaultMode,
+        "Define accrued, due, deposited, and remitted payroll-tax behavior and filing-state semantics.",
+        "The request mentions payroll tax operations, which is a narrower domain than general payroll compliance.",
+      ),
+    );
+  }
+
+  if (corpus.includes("song") || corpus.includes("chorus")) {
+    targets.push(
+      buildStaffingTarget(
+        "Chorus Architect",
+        defaultMode,
+        "Forge chorus-first structures and hook architecture for song development.",
+        "The request is song-oriented and needs a specialist who owns chorus construction rather than generic creative execution.",
+      ),
+    );
+  }
+
+  if (corpus.includes("lyric") || corpus.includes("death metal") || corpus.includes("gothic")) {
+    targets.push(
+      buildStaffingTarget(
+        "Gothic/Death Metal Lyric Strategist",
+        defaultMode,
+        "Pressure-test genre fit, tonal integrity, and lane-native lyric choices.",
+        "The request includes lyric or genre-sensitive language, which requires a domain-specific creative reviewer.",
+      ),
+    );
+  }
+
+  if (corpus.includes("title")) {
+    targets.push(
+      buildStaffingTarget(
+        "Song Title Ideator",
+        defaultMode,
+        "Generate and compare title lanes that reinforce theme, tone, and memorability.",
+        "The request explicitly involves title ideation and should have a title-owning specialist.",
+      ),
+    );
+  }
+
+  if (corpus.includes("security") || corpus.includes("pentest") || corpus.includes("exploit")) {
+    targets.push(
+      buildStaffingTarget(
+        "Chief Security Architect",
+        defaultMode,
+        "Own trust boundaries, release gates, and security decision quality for the mission.",
+        "Security-sensitive work should be owned by a dedicated security authority rather than the default implementation crew.",
+      ),
+    );
+  }
+
+  if (corpus.includes("research") || corpus.includes("investigate") || corpus.includes("verify")) {
+    targets.push(
+      buildStaffingTarget(
+        "Research Analyst",
+        defaultMode,
+        "Gather and synthesize evidence relevant to the mission's decision-making surface.",
+        "The request contains research or verification language that benefits from explicit evidence ownership.",
+        templateId === "verification-heavy",
+      ),
+    );
+  }
+
+  if (targets.length === 0) {
+    targets.push(
+      buildStaffingTarget(
+        "Domain Lead Persona",
+        "persona",
+        "Act as the primary domain owner for the requested work and shape the downstream specialist roster.",
+        "The request did not match a narrower known domain, so Foundry should first forge an explicit domain-owning lead instead of pretending the default runtime crew is the answer.",
+      ),
+      buildStaffingTarget(
+        "Implementation Specialist",
+        "persona",
+        "Translate the domain lead's requirements into concrete system or delivery work.",
+        "Most requests eventually need an implementation counterpart once the primary domain owner is identified.",
+        false,
+      ),
+    );
+  }
+
+  return {
+    intent:
+      "Infer the professions/personas the requester actually needs for this mission, then forge those workers as the production target. Foundry's own runtime crew is supporting infrastructure, not the answer.",
+    targets: uniqueTargets(targets),
+  };
+}
+
 function describeTemplateBuild(templateId: FoundryProductionPacket["templateId"], target: string): string {
   switch (templateId) {
     case "rapid-prototype":
@@ -198,6 +445,11 @@ function buildNormalProposalItems(
   const target = buildRequestedTarget(packet);
   const constraints = buildConstraintNotes(packet);
   const preferredFlow = extractTaggedNote(packet, "preferred flow:");
+  const staffingDirective = inferStaffingDirective(packet, templateId);
+  const deploymentDirective = inferDeploymentDirective(packet);
+  const staffingSummary = staffingDirective.targets
+    .map((staffingTarget) => `${staffingTarget.title} [${staffingTarget.mode}]`)
+    .join(" | ");
   const constraintSummary =
     constraints.length > 0
       ? `Preserve these operator notes: ${constraints.join(" | ")}.`
@@ -208,10 +460,26 @@ function buildNormalProposalItems(
 
   return [
     {
-      action: `Build ${target} as the first concrete delivery slice`,
-      purpose: "Turn the operator request into a specific implementation target instead of a generic improvement package.",
-      details: `${describeTemplateBuild(templateId, target)} ${constraintSummary}`,
-      expectedOutcome: `The team can inspect exactly what the first intended build is for ${target} before production starts.`,
+      action: `Infer the right professions/personas for ${target}`,
+      purpose: "Turn the operator request into the worker roster the requester actually needs, not Foundry's default internal crew.",
+      details: `${constraintSummary} Initial staffing inference: ${staffingSummary}.`,
+      expectedOutcome: `The team can inspect the proposed professions/personas that should be forged for ${target}.`,
+    },
+    {
+      action: `Forge ${target} as a staffing-driven delivery slice`,
+      purpose: "Use the inferred worker roster as the production target instead of collapsing the request into generic implementation roles.",
+      details: `${describeTemplateBuild(templateId, target)} Foundry's own execution spine remains support infrastructure around the forged workers.`,
+      expectedOutcome: `The first delivery slice reflects the mission's real domain workers rather than a static default crew.`,
+    },
+    {
+      action: `Prepare adapter-ready deployment output for ${target}`,
+      purpose: "Keep the forged worker set separate from any downstream deployment or activation behavior.",
+      details: deploymentDirective
+        ? `Operator-selected deployment target: ${deploymentDirective.target}. Foundry should emit that package form and stop at the handoff boundary.`
+        : "Deployment target remains unresolved, so Foundry should preserve validated worker specs and route adapter selection back to the operator.",
+      expectedOutcome: deploymentDirective
+        ? `The forged workers can be emitted as a governed ${deploymentDirective.target} package.`
+        : "The operator can choose whether the forged workers should remain worker specs or be materialized through a specific package adapter.",
     },
     {
       action: `Thread ${target} through the ${formatTemplateLabel(templateId)}`,
@@ -321,6 +589,13 @@ export class CitadelAdapter {
     const productionOrder = exampleProductionOrder();
     const templateId = classifyTemplate(packet);
     const consequenceTier = classifyTier(packet);
+    const staffingDirective = inferStaffingDirective(packet, templateId);
+    const deploymentDirective = inferDeploymentDirective(packet) ?? {
+      target: "worker-spec-only",
+      rationale:
+        "No deployment adapter was selected by the operator, so validated worker specs remain the only safe production output.",
+    };
+    const handoffDirective = inferHandoffDirective(packet);
     const executionMode = requiresFailureCase(packet) ? "verification-failure" : "normal";
     const proposalTitle =
       executionMode === "verification-failure"
@@ -394,6 +669,9 @@ export class CitadelAdapter {
       },
       consequenceTier,
       templateId,
+      staffingDirective,
+      deploymentDirective,
+      handoffDirective,
       executionMode,
       notarialRecord,
       returnStatus,
@@ -438,20 +716,23 @@ export class CitadelAdapter {
 
   private buildPromptReturn(packet: IsoldeIntakePacket): CitadelRookReturnPacket {
     const promptRequest = exampleOperatorPromptRequest();
+    const questions = clarificationQuestions(packet);
+    const hasDeploymentQuestion = questions.some((question) => question.toLowerCase().includes("deployment target"));
     const notarialRecord = buildNotarialRecord(
       packet,
       "operator-prompt-request",
-      "Production remains blocked pending operator clarification on the first concrete capability and preferred governed flow.",
+      hasDeploymentQuestion
+        ? "Production remains blocked pending operator clarification on deployment target selection for the forged workers."
+        : "Production remains blocked pending operator clarification on the first concrete capability and preferred governed flow.",
       [
         "Surface the clarification questions through Isolde.",
         "Preserve the returned answers on the next intake scroll.",
       ],
-      ["Capture the first concrete capability.", "Capture the preferred governed flow."],
+      hasDeploymentQuestion
+        ? ["Capture the deployment target.", "Preserve the forged worker inference for the next return."]
+        : ["Capture the first concrete capability.", "Capture the preferred governed flow."],
       ["Do not initiate production while clarification remains unresolved."],
-      [
-        "What is the first concrete SaaS capability that should be implemented?",
-        "Should the first runtime pass optimize for rapid prototype, creative development, or verification-heavy flow?",
-      ],
+      questions,
     );
     const returnStatus = buildReturnStatus();
 
@@ -466,6 +747,13 @@ export class CitadelAdapter {
         ...promptRequest,
         packetId: `opr-${packet.requestId}`,
         reason: `Citadel requires clarification before production can begin for request ${packet.requestId}.`,
+        questions,
+        blockingIssues: hasDeploymentQuestion
+          ? [
+              "Forged worker targets are available, but the deployment adapter is unresolved.",
+              "Foundry should not silently choose between worker-spec-only, persona-only-artifacts, codex-skill, or local-agent-manifest.",
+            ]
+          : promptRequest.blockingIssues,
         scroll: packet.scroll,
         notarialRecord,
         returnStatus,

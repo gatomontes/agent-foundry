@@ -70,6 +70,37 @@ export interface CitadelProposalItem {
   expectedOutcome: string;
 }
 
+export interface StaffingTarget {
+  id: string;
+  title: string;
+  mode: "profession" | "persona" | "agent";
+  purpose: string;
+  rationale: string;
+  required: boolean;
+}
+
+export interface StaffingDirective {
+  intent: string;
+  targets: StaffingTarget[];
+}
+
+export interface DeploymentDirective {
+  target:
+    | "worker-spec-only"
+    | "persona-only-artifacts"
+    | "codex-skill"
+    | "local-agent-manifest";
+  rationale: string;
+}
+
+export interface HandoffDirective {
+  recipientType: "operator" | "agent" | "skill";
+  mode: "operator-delivery" | "package-reference";
+  packageScope: "run-package";
+  operatorDestinationPolicy: "choose-at-return" | "not-applicable";
+  rationale: string;
+}
+
 export interface FoundryProductionPacket {
   packetId: string;
   missionId: string;
@@ -79,6 +110,9 @@ export interface FoundryProductionPacket {
   proposal: CitadelProposal;
   consequenceTier: ConsequenceTier;
   templateId: FlowTemplateId;
+  staffingDirective: StaffingDirective;
+  deploymentDirective: DeploymentDirective;
+  handoffDirective: HandoffDirective;
   executionMode?: "normal" | "verification-failure";
   failureReason?: string;
   requiredProfessionIds: string[];

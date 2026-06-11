@@ -77,6 +77,17 @@ export function validateFoundryProductionPacket(packet: FoundryProductionPacket)
   assertNonEmpty(packet.summary, "foundryProductionPacket.summary");
   assertNonEmpty(packet.proposal.title, "foundryProductionPacket.proposal.title");
   assertNonEmpty(packet.proposal.summary, "foundryProductionPacket.proposal.summary");
+  assertNonEmpty(packet.staffingDirective.intent, "foundryProductionPacket.staffingDirective.intent");
+  assertNonEmpty(packet.deploymentDirective.target, "foundryProductionPacket.deploymentDirective.target");
+  assertNonEmpty(packet.deploymentDirective.rationale, "foundryProductionPacket.deploymentDirective.rationale");
+  assertNonEmpty(packet.handoffDirective.recipientType, "foundryProductionPacket.handoffDirective.recipientType");
+  assertNonEmpty(packet.handoffDirective.mode, "foundryProductionPacket.handoffDirective.mode");
+  assertNonEmpty(packet.handoffDirective.packageScope, "foundryProductionPacket.handoffDirective.packageScope");
+  assertNonEmpty(
+    packet.handoffDirective.operatorDestinationPolicy,
+    "foundryProductionPacket.handoffDirective.operatorDestinationPolicy",
+  );
+  assertNonEmpty(packet.handoffDirective.rationale, "foundryProductionPacket.handoffDirective.rationale");
   assertNonEmpty(packet.productionProfile.mode, "foundryProductionPacket.productionProfile.mode");
   assertNonEmpty(
     packet.productionProfile.evidenceLevel,
@@ -99,6 +110,10 @@ export function validateFoundryProductionPacket(packet: FoundryProductionPacket)
     throw new Error("foundryProductionPacket.proposal.items must contain at least one proposal item.");
   }
 
+  if (packet.staffingDirective.targets.length === 0) {
+    throw new Error("foundryProductionPacket.staffingDirective.targets must contain at least one target.");
+  }
+
   for (const [index, item] of packet.proposal.items.entries()) {
     assertNonEmpty(item.action, `foundryProductionPacket.proposal.items[${index}].action`);
     assertNonEmpty(item.purpose, `foundryProductionPacket.proposal.items[${index}].purpose`);
@@ -107,6 +122,13 @@ export function validateFoundryProductionPacket(packet: FoundryProductionPacket)
       item.expectedOutcome,
       `foundryProductionPacket.proposal.items[${index}].expectedOutcome`,
     );
+  }
+
+  for (const [index, target] of packet.staffingDirective.targets.entries()) {
+    assertNonEmpty(target.id, `foundryProductionPacket.staffingDirective.targets[${index}].id`);
+    assertNonEmpty(target.title, `foundryProductionPacket.staffingDirective.targets[${index}].title`);
+    assertNonEmpty(target.purpose, `foundryProductionPacket.staffingDirective.targets[${index}].purpose`);
+    assertNonEmpty(target.rationale, `foundryProductionPacket.staffingDirective.targets[${index}].rationale`);
   }
 
   if (packet.scroll.entries.length === 0) {

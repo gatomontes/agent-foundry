@@ -9,7 +9,10 @@
     "check": "tsc -p tsconfig.json --noEmit",
     "example": "npm.cmd run build && node dist/runtime/examples/run-example.js",
     "failure-example": "npm.cmd run build && node dist/runtime/examples/run-failure-example.js",
-    "foundry": "npm.cmd run build && node dist/runtime/examples/run-foundry.js"
+    "foundry": "npm.cmd run build && node dist/runtime/examples/run-foundry.js",
+    "validate-workers": "npm.cmd run build && node dist/runtime/examples/validate-worker-artifacts.js",
+    "validate-run-package": "npm.cmd run build && node dist/runtime/examples/validate-run-package.js",
+    "validate-codex-skills": "npm.cmd run build && node dist/runtime/examples/validate-codex-skill-bundles.js"
   },
   "devDependencies": {
     "@types/node": "^24.6.0",

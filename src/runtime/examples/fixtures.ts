@@ -180,6 +180,43 @@ export function exampleProductionOrder(): FoundryProductionPacket {
     },
     consequenceTier: "routine",
     templateId: "saas-build",
+    staffingDirective: {
+      intent:
+        "Infer the professions/personas the requester actually needs for this mission, then forge those workers as the production target. Foundry's own runtime crew is supporting infrastructure, not the answer.",
+      targets: [
+        {
+          id: "domain-lead-persona",
+          title: "Domain Lead Persona",
+          mode: "persona",
+          purpose: "Act as the primary domain owner for the requested work and shape the downstream specialist roster.",
+          rationale:
+            "The example packet is generic, so it defaults to forging a domain-owning lead rather than pretending the runtime crew is the answer.",
+          required: true,
+        },
+        {
+          id: "implementation-specialist",
+          title: "Implementation Specialist",
+          mode: "persona",
+          purpose: "Translate the domain lead's requirements into concrete system or delivery work.",
+          rationale:
+            "A generic mission still benefits from a downstream implementation counterpart once the domain lead is identified.",
+          required: false,
+        },
+      ],
+    },
+    deploymentDirective: {
+      target: "worker-spec-only",
+      rationale:
+        "The example packet defaults to validated worker specs only until an operator chooses a downstream deployment adapter.",
+    },
+    handoffDirective: {
+      recipientType: "operator",
+      mode: "operator-delivery",
+      packageScope: "run-package",
+      operatorDestinationPolicy: "choose-at-return",
+      rationale:
+        "The example flow assumes a human operator is receiving the package and may choose where the returned package should be placed.",
+    },
     requiredProfessionIds: [
       "systems-architect",
       "runtime-operator",

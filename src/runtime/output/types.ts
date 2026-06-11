@@ -12,6 +12,7 @@ export interface OutputMaterializationResult {
   runPath: string;
   directoriesCreated: string[];
   filesCreated: string[];
+  runPackageManifestPath: string;
   scribeReportPath: string;
   critiqueReportPath: string | null;
   auditReportPath: string | null;
@@ -20,4 +21,7 @@ export interface OutputMaterializationResult {
   signaturePath: string | null;
   attestationPath: string | null;
   executionEvidencePath: string | null;
+  workerManifestPath: string | null;
+  workerSpecPaths: string[];
+  codexSkillBundlePaths: string[];
 }
