@@ -1,0 +1,26 @@
+{
+  "registration_id": "registration-foundry-001",
+  "created_at": "2026-06-12T13:05:00Z",
+  "badge": {
+    "badge_id": "badge-foundry-001",
+    "asset_id": "asset-foundry",
+    "asset_name": "Foundry",
+    "asset_class": "fabrication",
+    "owned_truth_domain": "worker-package-truth",
+    "issuing_authority": "imperial-registry",
+    "supported_contracts": [
+      "/schema/foundry.run-package.v1.schema.json",
+      "/schema/foundry.worker-manifest.v1.schema.json",
+      "/schema/foundry.worker-spec.v1.schema.json"
+    ],
+    "realm": "imperial-core",
+    "status": "active"
+  },
+  "registration_authority": "imperial-registry",
+  "asset_location": {
+    "repository_url": "https://github.com/gatomontes/agent-foundry.git",
+    "default_branch": "main"
+  },
+  "notes": "Foundry is the imperial fabrication authority and owns worker-package truth surfaces.",
+  "registration_status": "registered"
+}

@@ -1,5 +1,8 @@
 # Agent Foundry
 
+Imperial identity:
+- [docs/imperial-identity.md](C:\Users\gatom\Documents\Codex\foundry\docs\imperial-identity.md:1)
+
 The factory that turns cognition into action.
 
 Agent Foundry is the production and assembly layer for governed multi-agent work.

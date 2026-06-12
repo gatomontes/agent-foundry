@@ -1,0 +1,15 @@
+{
+  "badge_id": "badge-foundry-001",
+  "asset_id": "asset-foundry",
+  "asset_name": "Foundry",
+  "asset_class": "fabrication",
+  "owned_truth_domain": "worker-package-truth",
+  "issuing_authority": "imperial-registry",
+  "supported_contracts": [
+    "/schema/foundry.run-package.v1.schema.json",
+    "/schema/foundry.worker-manifest.v1.schema.json",
+    "/schema/foundry.worker-spec.v1.schema.json"
+  ],
+  "realm": "imperial-core",
+  "status": "active"
+}
