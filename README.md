@@ -1,10 +1,11 @@
-# Agent Foundry
+# The Foundry
 
 The factory that turns cognition into action.
 
-Agent Foundry is the production and assembly layer for governed multi-agent work.
+The Foundry is the production, persona-forging, and assembly layer for governed multi-agent work.
 
 It receives governed packets from Citadel and converts them into:
+- persona and worker-package forging,
 - production initiation,
 - specialist staffing activation,
 - operational topology materialization,
@@ -22,29 +23,46 @@ The current runtime now includes production-oriented output capabilities:
 Repo-local secret configuration is supported through `.foundry.env` or `.env.local`.
 `FOUNDRY_MANIFEST_SECRET` in either file will be used automatically by the runtime.
 
+## Repository Name Note
+
+The GitHub repository slug may still appear as `agent-foundry` for continuity and existing clone URLs.
+
+The canonical domain name is **The Foundry**.
+
+---
+
 ## Core Distinction
 
 ```txt
-Agent Foundry assembles cognition.
-Agent Framework governs cognition.
+The Foundry forges and assembles cognition.
+Citadel governs cognition.
+The Pit stress-tests persona-candidates.
+The Garrison houses admitted agents until summoned.
+Armory grants bounded capabilities.
 Blackquill audits cognition.
 Carmilla preserves cognition.
 ```
 
-Agent Foundry is not the governance substrate.
-That is Agent Framework.
+The Foundry is not the governance substrate.
+That is Citadel.
 
-Agent Foundry is not the critic or judge.
-That is Blackquill.
+The Foundry is not the proving ground.
+That is The Pit.
 
-Agent Foundry is not the archive.
-That is Carmilla.
+The Foundry is not the roster or barracks.
+That is The Garrison.
+
+The Foundry is not the critic or judge.
+That is Blackquill and Citadel disposition.
+
+The Foundry is not the archive.
+That is Carmilla and Secretariat custody.
 
 ## Foundry Boundary: Isolde
 
 Isolde belongs to the outer Foundry boundary, not to the Citadel.
 
-She is the gentle help-desk clerk of the Foundry.
+She is the gentle help-desk clerk of The Foundry.
 
 Her duties are limited:
 - receive operator input,
@@ -75,20 +93,22 @@ It activates governed work.
 
 ## Relationship To The Citadel
 
-The Citadel is not internal to the Foundry.
+The Citadel is not internal to The Foundry.
 
 The Citadel governs operational law through its own Rook boundary.
 
-Citadel receives normalized requests through Citadel Rook and returns one of two governed outcomes back across the wall:
+Citadel receives normalized requests through Citadel Rook and returns governed outcomes back across the wall, such as:
 - a production order for Foundry to initiate,
-- an operator prompt request for Isolde to surface before production can continue.
+- a persona-forging order for Foundry to materialize,
+- an operator prompt request for Isolde to surface before production can continue,
+- a return-to-Foundry order after Pit/Citadel review.
 
-Foundry consumes Citadel outputs.
+The Foundry consumes Citadel outputs.
 It does not replace Citadel governance.
 
 ## Purpose
 
-Agent Foundry exists to make abstract agent governance usable.
+The Foundry exists to make abstract agent governance usable.
 
 Humans do not naturally request:
 - verification semantics,
@@ -118,7 +138,9 @@ Operator Intent
             -> Foundry Rook
               -> either:
                  1. initiate production
-                 2. hand off operator prompt to Isolde
+                 2. forge persona / worker package
+                 3. hand off operator prompt to Isolde
+                 4. receive return-to-Foundry repair instruction
 ```
 
 ## Communication Rule
@@ -143,11 +165,13 @@ Doctrine without executable mission structure becomes abstraction.
 Isolde owns operator communication.
 Foundry Rook owns production ingress and operator re-prompt routing.
 The Citadel owns governance planning and mission law.
+The Pit owns persona-candidate stress testing and survival reporting.
+The Garrison owns admitted-agent residence, readiness, and roster state.
+Armory owns bounded capability grants.
 Blackquill owns critique.
-Carmilla owns memory.
-Operators own execution.
-Persona Factory owns personnel generation.
-Agent Framework owns governance substrate.
+Carmilla preserves memory.
+Operators own final human intent and accountability.
+The Foundry owns personnel and worker-package forging.
 
 No component should absorb another component's primary responsibility.
 
@@ -169,6 +193,8 @@ Each blueprint should define:
 - staffing
 - operational flow
 - governance attachment
+- Pit requirement
+- Garrison summonability requirements
 - review gates
 - disposition criteria
 
@@ -177,8 +203,10 @@ Each blueprint should define:
 Specialists should follow:
 
 ```txt
-core archetype
+core profession archetype
 -> specialization
+-> persona candidate
+-> worker package
 -> runtime implementation
 ```
 
@@ -201,12 +229,15 @@ cathedral, not cosplay
 This repository should define:
 - intake patterns,
 - boundary packet schemas,
+- persona-forging contracts,
 - capability maps,
 - specialist catalogs,
 - assembly protocols,
 - mission blueprints,
 - topology templates,
 - Citadel integration points,
+- Pit stress-test integration points,
+- Garrison admission and readiness handoff points,
 - Blackquill review-gate attachments,
 - Carmilla archival continuity points,
 - Isolde communication boundary rules,
@@ -215,10 +246,10 @@ This repository should define:
 
 ## Not a Prompt Library
 
-Agent Foundry is not a prompt pile.
+The Foundry is not a prompt pile.
 
-It is a cognitive assembly system.
+It is a cognitive assembly and forging system.
 
 Its value is not that it can summon personas.
 
-Its value is that it knows how to materialize governed orders into production, and how to route unresolved needs back to the operator without collapsing governance into implementation.
+Its value is that it knows how to materialize governed orders into production, how to forge persona-candidates and worker packages under Citadel law, and how to route unresolved needs back to the operator without collapsing governance into implementation.
